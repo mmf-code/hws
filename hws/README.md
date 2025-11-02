@@ -4,7 +4,7 @@ Course homeworks and projects repository.
 
 ---
 
-## 📁 Contents
+## Contents
 
 ### p3dx_homework/
 **KON414E - Principles of Robot Autonomy - Homework 1**
@@ -12,11 +12,11 @@ Course homeworks and projects repository.
 Pioneer 3-DX robot simulation with ROS 2 Humble and Gazebo Classic.
 
 **Key Features:**
-- ✅ Full ROS 1 → ROS 2 port of Pioneer 3-DX packages
-- ✅ Realistic odometry drift and sensor noise simulation
-- ✅ Circular motion trajectory testing
-- ✅ RViz visualization with odometry covariance
-- ✅ Plotjuggler trajectory analysis
+- Full ROS 1 → ROS 2 port of Pioneer 3-DX packages
+- Realistic odometry drift and sensor noise simulation
+- Circular motion trajectory testing
+- RViz visualization with odometry covariance
+- Plotjuggler trajectory analysis
 
 **Quick Links:**
 - [Project Documentation](p3dx_homework/README.md)
@@ -33,7 +33,7 @@ Pioneer 3-DX robot simulation with ROS 2 Humble and Gazebo Classic.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone or navigate to p3dx_homework
@@ -48,7 +48,7 @@ cat PROJECT_INFO.md
 
 ---
 
-## 📚 Documentation Structure
+## Documentation Structure
 
 Each project contains:
 - `README.md` - Complete technical documentation
@@ -57,9 +57,3 @@ Each project contains:
 - `scripts/` - Python scripts and utilities
 - `launch/` - ROS 2 launch files
 - `screenshots/` - Visual documentation
-
----
-
-**Author:** mmf
-**Institution:** [Your University]
-**Academic Year:** 2025-2026
