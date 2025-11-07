@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!-- Differential Drive Controller Plugin -->
+  <gazebo>
+    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+
+      <!-- Update rate in Hz -->
+      <update_rate>50</update_rate>
+
+      <!-- wheels -->
+      <left_joint>left_hub_joint</left_joint>
+      <right_joint>right_hub_joint</right_joint>
+
+      <!-- kinematics -->
+      <wheel_separation>0.33</wheel_separation>
+      <wheel_diameter>0.18</wheel_diameter>
+
+      <!-- limits -->
+      <max_wheel_torque>20</max_wheel_torque>
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+
+      <!-- Realistic noise parameters for odometry -->
+      <!-- Simulates encoder errors, wheel slip, and drift -->
+      <odometry_source>encoder</odometry_source>
+
+      <!-- Covariance for pose (x, y, yaw) - models accumulated error -->
+      <covariance_x>0.0001</covariance_x>
+      <covariance_y>0.0001</covariance_y>
+      <covariance_yaw>0.01</covariance_yaw>
+
+      <!-- Noise in odometry measurements -->
+      <noise>0.05</noise>
+
+      <!-- Simulate wheel slip on turns -->
+      <wheel_slip_compliance>0.02</wheel_slip_compliance>
+
+      <!-- output -->
+      <publish_odom>true</publish_odom>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+
+      <!-- Topic names -->
+      <command_topic>cmd_vel</command_topic>
+      <odometry_topic>odom</odometry_topic>
+
+    </plugin>
+  </gazebo>
+
+  <!-- Joint State Publisher -->
+  <gazebo>
+    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+      <update_rate>50.0</update_rate>
+      <joint_name>chassis_swivel_joint</joint_name>
+      <joint_name>swivel_wheel_joint</joint_name>
+      <joint_name>left_hub_joint</joint_name>
+      <joint_name>right_hub_joint</joint_name>
+    </plugin>
+  </gazebo>
+
+  <!-- Ground Truth Odometry -->
+  <gazebo>
+    <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+      <update_rate>50.0</update_rate>
+      <body_name>base_link</body_name>
+      <topic_name>ground_truth/pose</topic_name>
+      <gaussian_noise>0.01</gaussian_noise>
+      <frame_name>world</frame_name>
+      <xyz_offset>0 0 0</xyz_offset>
+      <rpy_offset>0 0 0</rpy_offset>
+    </plugin>
+  </gazebo>
+
+</robot>
