@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rqt_multiplot>
+  <table>
+    <column>
+      <row>
+        <plot>
+          <title>IMU Angular Velocity</title>
+          <axis_config>
+            <x_axis>
+              <title>Time [s]</title>
+            </x_axis>
+            <y_axis>
+              <title>Angular Velocity [rad/s]</title>
+            </y_axis>
+          </axis_config>
+          <plot_rate>30</plot_rate>
+          <curve>
+            <title>Angular Vel X</title>
+            <color>#ff0000</color>
+            <axis_config>
+              <x_axis_type>value</x_axis_type>
+              <y_axis_type>value</y_axis_type>
+            </axis_config>
+            <data>
+              <type>subscriber</type>
+              <topic>/imu/data</topic>
+              <field>angular_velocity.x</field>
+            </data>
+          </curve>
+          <curve>
+            <title>Angular Vel Y</title>
+            <color>#00ff00</color>
+            <axis_config>
+              <x_axis_type>value</x_axis_type>
+              <y_axis_type>value</y_axis_type>
+            </axis_config>
+            <data>
+              <type>subscriber</type>
+              <topic>/imu/data</topic>
+              <field>angular_velocity.y</field>
+            </data>
+          </curve>
+          <curve>
+            <title>Angular Vel Z</title>
+            <color>#0000ff</color>
+            <axis_config>
+              <x_axis_type>value</x_axis_type>
+              <y_axis_type>value</y_axis_type>
+            </axis_config>
+            <data>
+              <type>subscriber</type>
+              <topic>/imu/data</topic>
+              <field>angular_velocity.z</field>
+            </data>
+          </curve>
+        </plot>
+      </row>
+    </column>
+    <column>
+      <row>
+        <plot>
+          <title>IMU Linear Acceleration</title>
+          <axis_config>
+            <x_axis>
+              <title>Time [s]</title>
+            </x_axis>
+            <y_axis>
+              <title>Linear Acceleration [m/s^2]</title>
+            </y_axis>
+          </axis_config>
+          <plot_rate>30</plot_rate>
+          <curve>
+            <title>Linear Acc X</title>
+            <color>#ff0000</color>
+            <axis_config>
+              <x_axis_type>value</x_axis_type>
+              <y_axis_type>value</y_axis_type>
+            </axis_config>
+            <data>
+              <type>subscriber</type>
+              <topic>/imu/data</topic>
+              <field>linear_acceleration.x</field>
+            </data>
+          </curve>
+          <curve>
+            <title>Linear Acc Y</title>
+            <color>#00ff00</color>
+            <axis_config>
+              <x_axis_type>value</x_axis_type>
+              <y_axis_type>value</y_axis_type>
+            </axis_config>
+            <data>
+              <type>subscriber</type>
+              <topic>/imu/data</topic>
+              <field>linear_acceleration.y</field>
+            </data>
+          </curve>
+          <curve>
+            <title>Linear Acc Z</title>
+            <color>#0000ff</color>
+            <axis_config>
+              <x_axis_type>value</x_axis_type>
+              <y_axis_type>value</y_axis_type>
+            </axis_config>
+            <data>
+              <type>subscriber</type>
+              <topic>/imu/data</topic>
+              <field>linear_acceleration.z</field>
+            </data>
+          </curve>
+        </plot>
+      </row>
+    </column>
+  </table>
+  <window>
+    <width>1200</width>
+    <height>600</height>
+  </window>
+</rqt_multiplot>
