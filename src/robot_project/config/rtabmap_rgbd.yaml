@@ -1,0 +1,110 @@
+# RTAB-Map RGB-D Visual SLAM Configuration
+# Uses visual features from RGB images + depth for loop closure detection
+# Optimized for Pioneer 3-DX with front-mounted RGBD camera
+
+rtabmap:
+  ros__parameters:
+    # ============ FRAME CONFIGURATION ============
+    frame_id: base_link
+    odom_frame_id: odom
+    map_frame_id: map
+
+    # Use simulation time from Gazebo
+    use_sim_time: true
+
+    # ============ SUBSCRIPTION TOPICS ============
+    subscribe_depth: true
+    subscribe_rgb: true
+    subscribe_scan: false
+    subscribe_scan_cloud: false
+    subscribe_odom_info: false
+
+    # Approximate sync for camera topics
+    approx_sync: true
+    approx_sync_max_interval: 0.05
+
+    # Queue sizes
+    queue_size: 10
+    qos: 2  # Best effort for sensor data
+
+    # ============ VISUAL ODOMETRY ============
+    # We use EKF-fused odometry, not visual odometry
+    odom_sensor_sync: true
+
+    # ============ RTAB-MAP CORE PARAMETERS ============
+    # Database
+    Rtabmap/DatabasePath: ""  # Empty = temp database
+    Rtabmap/DetectionRate: 1.0  # Hz (loop closure detection rate)
+    Rtabmap/CreateIntermediateNodes: false
+
+    # Memory Management
+    Mem/IncrementalMemory: true  # Online SLAM mode
+    Mem/InitWMWithAllNodes: true
+    Mem/STMSize: 30  # Short-term memory size
+    Mem/RehearsalSimilarity: 0.6  # Similarity threshold for rehearsal
+
+    # ============ FEATURE DETECTION ============
+    # GFTT/ORB features (good for indoor environments)
+    Kp/DetectorStrategy: 6  # 6=GFTT, 8=ORB
+    Kp/MaxFeatures: 500
+    Kp/MaxDepth: 4.0  # Max depth for features (camera range)
+    Kp/MinDepth: 0.1  # Min depth for features
+
+    # ============ LOOP CLOSURE ============
+    Rtabmap/LoopThr: 0.11  # Loop closure threshold
+    Rtabmap/LoopRatio: 0.0
+
+    # Visual Bag-of-Words
+    RGBD/LoopClosureReextractFeatures: true
+
+    # ============ GRAPH OPTIMIZATION ============
+    Optimizer/Strategy: 1  # 0=TORO, 1=g2o, 2=GTSAM
+    Optimizer/Iterations: 100
+    Optimizer/Slam2D: true  # 2D optimization (ground robot)
+    Optimizer/VarianceIgnored: false
+
+    # ============ RGB-D SPECIFIC ============
+    RGBD/OptimizeFromGraphEnd: true
+    RGBD/OptimizeMaxError: 3.0  # Max error for optimization
+    RGBD/LocalRadius: 10.0  # Local map radius (meters)
+    RGBD/ProximityBySpace: true
+    RGBD/AngularUpdate: 0.1  # Min angular change to add node (rad)
+    RGBD/LinearUpdate: 0.1  # Min linear change to add node (m)
+    RGBD/NeighborLinkRefining: true
+
+    # ============ POINT CLOUD ASSEMBLY ============
+    Grid/CellSize: 0.05  # 5cm resolution
+    Grid/RangeMax: 4.0  # Max range for grid
+    Grid/RangeMin: 0.1
+    Grid/ClusterRadius: 0.1
+    Grid/DepthDecimation: 4  # Reduce point cloud density
+    Grid/FromDepth: true  # Generate grid from depth
+    Grid/MaxGroundAngle: 45.0
+    Grid/MaxObstacleHeight: 2.0
+    Grid/MinGroundHeight: 0.0
+    Grid/NormalK: 20
+    Grid/3D: true  # Enable 3D occupancy grid
+
+    # ============ 3D MAP CONFIGURATION ============
+    # Point cloud map settings
+    cloud_output_voxelized: true
+    cloud_voxel_size: 0.05
+    cloud_subtract_filtering: false
+
+    # Octomap integration
+    grid_from_depth: true
+
+# RGB-D Odometry node (if needed as backup)
+rgbd_odometry:
+  ros__parameters:
+    frame_id: base_link
+    odom_frame_id: odom
+    publish_tf: false  # EKF publishes TF
+    use_sim_time: true
+
+    Odom/Strategy: 0  # 0=Frame-to-Map, 1=Frame-to-Frame
+    Odom/ResetCountdown: 3
+    Odom/GuessMotion: true
+    Vis/EstimationType: 1  # 0=3D, 1=2D
+    Vis/MaxFeatures: 500
+    Vis/MinInliers: 20
