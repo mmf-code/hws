@@ -27,13 +27,35 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-### 3. Run Full System
+### 3. Run SLAM System
 ```bash
-# Terminal 1: Launch everything
-ros2 launch robot_project project_bringup.launch.py
+# Option A: Full SLAM pipeline (Gazebo + EKF + RTAB-Map + RViz)
+ros2 launch robot_project full_slam.launch.py
 
-# Terminal 2 (optional): Manual control
+# Option B: Step-by-step launch
+# Terminal 1: Base simulation (Gazebo + EKF)
+ros2 launch robot_project project_bringup.launch.py use_rviz:=false
+
+# Terminal 2: RTAB-Map SLAM (RGB-D visual mode)
+ros2 launch robot_project slam_rgbd.launch.py
+
+# OR: RTAB-Map SLAM (ICP mode for comparison)
+ros2 launch robot_project slam_icp.launch.py
+
+# Terminal 3: Manual control for mapping
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+### 4. SLAM Mode Selection
+```bash
+# RGB-D Visual SLAM (default)
+ros2 launch robot_project full_slam.launch.py slam_mode:=rgbd
+
+# ICP-based SLAM (for comparison)
+ros2 launch robot_project full_slam.launch.py slam_mode:=icp
+
+# Use RTAB-Map native visualizer instead of RViz
+ros2 launch robot_project full_slam.launch.py use_rtabmap_viz:=true use_rviz:=false
 ```
 
 ---
@@ -50,22 +72,21 @@ hws_repo/
 │   │
 │   └── robot_project/          # FINAL PROJECT PACKAGE
 │       ├── config/             # Configuration files
-│       │   ├── robot_localization.yaml
-│       │   ├── rtabmap_visual.yaml
-│       │   ├── rtabmap_icp.yaml
-│       │   └── nav2_params.yaml
+│       │   ├── robot_localization.yaml  # EKF sensor fusion
+│       │   ├── rtabmap_rgbd.yaml        # Visual SLAM config
+│       │   └── rtabmap_icp.yaml         # ICP SLAM config
 │       ├── launch/             # Launch files
-│       │   ├── project_bringup.launch.py
-│       │   ├── sensor_fusion.launch.py
-│       │   ├── slam_visual.launch.py
-│       │   ├── slam_icp.launch.py
-│       │   └── navigation.launch.py
+│       │   ├── full_slam.launch.py      # Complete SLAM pipeline
+│       │   ├── project_bringup.launch.py # Base simulation
+│       │   ├── sensor_fusion.launch.py  # EKF only
+│       │   ├── slam_rgbd.launch.py      # Visual SLAM
+│       │   └── slam_icp.launch.py       # ICP SLAM
 │       ├── robot_project/      # Python nodes
-│       │   ├── evaluation_node.py
-│       │   ├── waypoint_navigator.py
-│       │   └── map_metrics.py
+│       │   ├── evaluation_node.py       # Ground truth comparison
+│       │   ├── waypoint_navigator.py    # Nav2 waypoints
+│       │   └── map_metrics.py           # Map quality metrics
 │       └── rviz/
-│           └── project.rviz
+│           └── slam_config.rviz         # SLAM visualization
 │
 ├── project/                    # Documentation & Results
 │   ├── PROJECT_PLAN.md         # Detailed implementation plan
