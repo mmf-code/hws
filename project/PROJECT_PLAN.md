@@ -18,7 +18,7 @@
 | **Faz 2: Sensor Fusion** | ✅ Tamamlandı | robot_localization EKF (IMU + wheel odom) |
 | **Faz 3: RTAB-Map SLAM** | ✅ Tamamlandı | Visual (RGBD) + ICP configs, launch files |
 | **Faz 4: Değerlendirme** | ✅ Tamamlandı | evaluation_node, map_metrics nodes |
-| **Faz 5: Navigation** | ⏳ Devam Ediyor | Nav2 entegrasyonu |
+| **Faz 5: Navigation** | ✅ Tamamlandı | Nav2 entegrasyonu, depth→laserscan |
 | **Faz 6: Dokümantasyon** | ⏳ Bekliyor | Rapor, sunum, video |
 
 **Son Güncelleme:** 25 Aralık 2024
@@ -78,8 +78,8 @@
 ✅ Ground truth odometry (Gazebo p3d plugin) - TAMAMLANDI
 ✅ robot_localization (EKF sensor fusion) - TAMAMLANDI
 ✅ RTAB-Map SLAM (Visual + ICP configs) - TAMAMLANDI
-⏳ Nav2 navigation stack - DEVAM EDİYOR
-⏳ 3D → 2D map projection - DEVAM EDİYOR
+✅ Nav2 navigation stack - TAMAMLANDI
+✅ Depth → LaserScan (depthimage_to_laserscan) - TAMAMLANDI
 ✅ Evaluation node - TAMAMLANDI
 ✅ Map metrics node - TAMAMLANDI
 ✅ Waypoint navigator (temel) - TAMAMLANDI
