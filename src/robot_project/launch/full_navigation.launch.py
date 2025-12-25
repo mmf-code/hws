@@ -314,16 +314,19 @@ def generate_launch_description():
         ),
 
         # ========== RVIZ ==========
+        # Use ExecuteProcess to clean Snap library paths that conflict with apt ROS2
         TimerAction(
             period=16.0,
             actions=[
-                Node(
-                    package='rviz2',
-                    executable='rviz2',
-                    name='rviz2',
+                ExecuteProcess(
+                    cmd=[
+                        'bash', '-c',
+                        # Filter out Snap paths from LD_LIBRARY_PATH to avoid libpthread conflict
+                        'export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ":" "\\n" | grep -v snap | tr "\\n" ":"); '
+                        'unset GTK_PATH; '
+                        f'rviz2 -d {rviz_config} --ros-args -p use_sim_time:=true'
+                    ],
                     output='screen',
-                    arguments=['-d', rviz_config],
-                    parameters=[{'use_sim_time': use_sim_time}],
                     condition=IfCondition(use_rviz)
                 )
             ]

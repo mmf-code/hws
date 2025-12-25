@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-Full SLAM System Launch File
+Autonomous SLAM Launch File
 
-Launches complete SLAM pipeline:
+Launches complete autonomous exploration and mapping:
 1. Gazebo with Office World
 2. Robot with sensors
 3. robot_localization (EKF sensor fusion)
 4. RTAB-Map SLAM
-5. Ground truth evaluation
-6. RViz visualization
+5. Autonomous Explorer (hw3-style depth-based navigation)
+6. Evaluation nodes (ground truth comparison)
+7. RViz visualization (2D/3D mapping)
 
 Usage:
-    ros2 launch robot_project full_slam.launch.py
-    ros2 launch robot_project full_slam.launch.py slam_mode:=icp
-    ros2 launch robot_project full_slam.launch.py use_rviz:=false
+    ros2 launch robot_project autonomous_slam.launch.py
+    ros2 launch robot_project autonomous_slam.launch.py slam_mode:=icp
+    ros2 launch robot_project autonomous_slam.launch.py use_rviz:=false
 """
 
 import os
@@ -25,7 +26,6 @@ from launch.actions import (
     TimerAction,
     ExecuteProcess,
     SetEnvironmentVariable,
-    GroupAction
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -53,8 +53,7 @@ def generate_launch_description():
     # Launch configurations
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     use_rviz = LaunchConfiguration('use_rviz', default='true')
-    use_rtabmap_viz = LaunchConfiguration('use_rtabmap_viz', default='false')
-    slam_mode = LaunchConfiguration('slam_mode', default='rgbd')  # 'rgbd' or 'icp'
+    slam_mode = LaunchConfiguration('slam_mode', default='rgbd')
 
     # Robot spawn position
     robot_x = LaunchConfiguration('robot_x', default='2.0')
@@ -74,8 +73,6 @@ def generate_launch_description():
         # ========== ARGUMENTS ==========
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('use_rviz', default_value='true'),
-        DeclareLaunchArgument('use_rtabmap_viz', default_value='false',
-                              description='Use RTAB-Map native visualizer'),
         DeclareLaunchArgument('slam_mode', default_value='rgbd',
                               description='SLAM mode: rgbd or icp'),
         DeclareLaunchArgument('robot_x', default_value='2.0'),
@@ -106,6 +103,7 @@ def generate_launch_description():
         ),
 
         # ========== STATIC TF: world -> map ==========
+        # Ground truth publishes in 'world' frame, SLAM uses 'map' frame
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
@@ -236,6 +234,27 @@ def generate_launch_description():
             ]
         ),
 
+        # ========== AUTONOMOUS EXPLORER ==========
+        TimerAction(
+            period=15.0,
+            actions=[
+                Node(
+                    package='robot_project',
+                    executable='autonomous_explorer',
+                    name='autonomous_explorer',
+                    output='screen',
+                    parameters=[{
+                        'use_sim_time': use_sim_time,
+                        'mode': 'free',  # 'free' (hw3-style) or 'waypoint'
+                        'linear_speed': 0.35,
+                        'angular_speed': 0.6,
+                        'min_distance': 0.8,
+                        'critical_distance': 0.4,
+                    }]
+                )
+            ]
+        ),
+
         # ========== EVALUATION NODE ==========
         TimerAction(
             period=12.0,
@@ -264,36 +283,13 @@ def generate_launch_description():
             ]
         ),
 
-        # ========== RTAB-MAP VISUALIZATION ==========
-        TimerAction(
-            period=14.0,
-            actions=[
-                Node(
-                    package='rtabmap_viz',
-                    executable='rtabmap_viz',
-                    name='rtabmap_viz',
-                    output='screen',
-                    parameters=[{'use_sim_time': use_sim_time}],
-                    remappings=[
-                        ('rgb/image', '/camera/rgbd_camera/image_raw'),
-                        ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
-                        ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
-                        ('odom', '/odometry/filtered'),
-                    ],
-                    condition=IfCondition(use_rtabmap_viz)
-                )
-            ]
-        ),
-
         # ========== RVIZ ==========
-        # Use ExecuteProcess to clean Snap library paths that conflict with apt ROS2
         TimerAction(
-            period=14.0,
+            period=20.0,
             actions=[
                 ExecuteProcess(
                     cmd=[
                         'bash', '-c',
-                        # Filter out Snap paths from LD_LIBRARY_PATH to avoid libpthread conflict
                         'export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ":" "\\n" | grep -v snap | tr "\\n" ":"); '
                         'unset GTK_PATH; '
                         f'rviz2 -d {rviz_config} --ros-args -p use_sim_time:=true'
