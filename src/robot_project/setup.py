@@ -28,6 +28,8 @@ setup(
             'waypoint_navigator = robot_project.waypoint_navigator:main',
             'map_metrics = robot_project.map_metrics:main',
             'autonomous_explorer = robot_project.autonomous_explorer:main',
+            'slam_comparison = robot_project.slam_comparison:main',
+            'random_waypoint_nav = robot_project.random_waypoint_nav:main',
         ],
     },
 )
