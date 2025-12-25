@@ -63,15 +63,15 @@ def generate_launch_description():
                     'use_sim_time': use_sim_time,
                     'database_path': database_path,
                     # SLAM mode settings
-                    'Mem/IncrementalMemory': True,
-                    'Mem/InitWMWithAllNodes': False,
+                    'Mem/IncrementalMemory': 'true',
+                    'Mem/InitWMWithAllNodes': 'false',
                 }
             ],
             remappings=[
                 # Input topics
-                ('rgb/image', '/camera/rgb/image_raw'),
-                ('rgb/camera_info', '/camera/rgb/camera_info'),
-                ('depth/image', '/camera/depth/image_raw'),
+                ('rgb/image', '/camera/rgbd_camera/image_raw'),
+                ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
                 ('odom', '/odometry/filtered'),  # EKF-fused odometry
                 # Output topics
                 ('map', '/map'),
@@ -94,14 +94,14 @@ def generate_launch_description():
                     'use_sim_time': use_sim_time,
                     'database_path': database_path,
                     # Localization mode settings
-                    'Mem/IncrementalMemory': False,
-                    'Mem/InitWMWithAllNodes': True,
+                    'Mem/IncrementalMemory': 'false',
+                    'Mem/InitWMWithAllNodes': 'true',
                 }
             ],
             remappings=[
-                ('rgb/image', '/camera/rgb/image_raw'),
-                ('rgb/camera_info', '/camera/rgb/camera_info'),
-                ('depth/image', '/camera/depth/image_raw'),
+                ('rgb/image', '/camera/rgbd_camera/image_raw'),
+                ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
                 ('odom', '/odometry/filtered'),
                 ('map', '/map'),
                 ('cloud_map', '/rtabmap/cloud_map'),
@@ -120,9 +120,9 @@ def generate_launch_description():
                 'use_sim_time': use_sim_time,
             }],
             remappings=[
-                ('rgb/image', '/camera/rgb/image_raw'),
-                ('rgb/camera_info', '/camera/rgb/camera_info'),
-                ('depth/image', '/camera/depth/image_raw'),
+                ('rgb/image', '/camera/rgbd_camera/image_raw'),
+                ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
                 ('odom', '/odometry/filtered'),
             ]
         ),
