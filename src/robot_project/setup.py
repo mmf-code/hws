@@ -27,6 +27,7 @@ setup(
             'evaluation_node = robot_project.evaluation_node:main',
             'waypoint_navigator = robot_project.waypoint_navigator:main',
             'map_metrics = robot_project.map_metrics:main',
+            'autonomous_explorer = robot_project.autonomous_explorer:main',
         ],
     },
 )
