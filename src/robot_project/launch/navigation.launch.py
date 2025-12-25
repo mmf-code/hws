@@ -88,8 +88,8 @@ def generate_launch_description():
                 'output_frame_id': 'camera_link',
             }],
             remappings=[
-                ('depth', '/camera/depth/image_raw'),
-                ('depth_camera_info', '/camera/depth/camera_info'),
+                ('depth', '/camera/rgbd_camera/depth/image_raw'),
+                ('depth_camera_info', '/camera/rgbd_camera/depth/camera_info'),
                 ('scan', '/scan'),
             ]
         ),

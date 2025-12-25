@@ -66,9 +66,9 @@ def generate_launch_description():
                 'approx_sync_max_interval': 0.05,
             }],
             remappings=[
-                ('depth/image', '/camera/depth/image_raw'),
-                ('depth/camera_info', '/camera/depth/camera_info'),
-                ('cloud', '/camera/depth/points_assembled'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
+                ('depth/camera_info', '/camera/rgbd_camera/depth/camera_info'),
+                ('cloud', '/camera/rgbd_camera/points_assembled'),
             ]
         ),
 
@@ -87,16 +87,16 @@ def generate_launch_description():
                     'Reg/Strategy': '1',  # ICP
                     'Reg/Force3DoF': 'true',
                     # SLAM mode settings
-                    'Mem/IncrementalMemory': True,
-                    'Mem/InitWMWithAllNodes': False,
+                    'Mem/IncrementalMemory': 'true',
+                    'Mem/InitWMWithAllNodes': 'false',
                 }
             ],
             remappings=[
                 # Input topics
-                ('rgb/image', '/camera/rgb/image_raw'),
-                ('rgb/camera_info', '/camera/rgb/camera_info'),
-                ('depth/image', '/camera/depth/image_raw'),
-                ('scan_cloud', '/camera/depth/points'),  # Direct point cloud
+                ('rgb/image', '/camera/rgbd_camera/image_raw'),
+                ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
+                ('scan_cloud', '/camera/rgbd_camera/points'),  # Direct point cloud
                 ('odom', '/odometry/filtered'),  # EKF-fused odometry
                 # Output topics
                 ('map', '/map'),
@@ -120,15 +120,15 @@ def generate_launch_description():
                     'database_path': database_path,
                     'Reg/Strategy': '1',
                     'Reg/Force3DoF': 'true',
-                    'Mem/IncrementalMemory': False,
-                    'Mem/InitWMWithAllNodes': True,
+                    'Mem/IncrementalMemory': 'false',
+                    'Mem/InitWMWithAllNodes': 'true',
                 }
             ],
             remappings=[
-                ('rgb/image', '/camera/rgb/image_raw'),
-                ('rgb/camera_info', '/camera/rgb/camera_info'),
-                ('depth/image', '/camera/depth/image_raw'),
-                ('scan_cloud', '/camera/depth/points'),
+                ('rgb/image', '/camera/rgbd_camera/image_raw'),
+                ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
+                ('scan_cloud', '/camera/rgbd_camera/points'),
                 ('odom', '/odometry/filtered'),
                 ('map', '/map'),
                 ('cloud_map', '/rtabmap/cloud_map'),
@@ -147,10 +147,10 @@ def generate_launch_description():
                 'use_sim_time': use_sim_time,
             }],
             remappings=[
-                ('rgb/image', '/camera/rgb/image_raw'),
-                ('rgb/camera_info', '/camera/rgb/camera_info'),
-                ('depth/image', '/camera/depth/image_raw'),
-                ('scan_cloud', '/camera/depth/points'),
+                ('rgb/image', '/camera/rgbd_camera/image_raw'),
+                ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
+                ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
+                ('scan_cloud', '/camera/rgbd_camera/points'),
                 ('odom', '/odometry/filtered'),
             ]
         ),
