@@ -264,7 +264,11 @@ def generate_launch_description():
                     executable='evaluation_node',
                     name='evaluation_node',
                     output='screen',
-                    parameters=[{'use_sim_time': use_sim_time}]
+                    parameters=[{
+                        'use_sim_time': use_sim_time,
+                        'slam_mode': slam_mode,
+                        'output_dir': 'project/results/data',
+                    }]
                 )
             ]
         ),
@@ -278,7 +282,11 @@ def generate_launch_description():
                     executable='map_metrics',
                     name='map_metrics',
                     output='screen',
-                    parameters=[{'use_sim_time': use_sim_time}]
+                    parameters=[{
+                        'use_sim_time': use_sim_time,
+                        'slam_mode': slam_mode,
+                        'output_dir': 'project/results/data',
+                    }]
                 )
             ]
         ),
