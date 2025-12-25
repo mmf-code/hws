@@ -34,8 +34,9 @@ rtabmap:
     # ============ RTAB-MAP CORE PARAMETERS ============
     # Database
     Rtabmap/DatabasePath: ""  # Empty = temp database
-    Rtabmap/DetectionRate: "1.0"  # Hz (loop closure detection rate)
+    Rtabmap/DetectionRate: "0.5"  # Hz (loop closure detection rate - reduced for stability)
     Rtabmap/CreateIntermediateNodes: "false"
+    Rtabmap/PublishPdf: "false"  # Don't publish probability map
 
     # Memory Management
     Mem/IncrementalMemory: "true"  # Online SLAM mode
@@ -73,23 +74,27 @@ rtabmap:
     RGBD/NeighborLinkRefining: "true"
 
     # ============ POINT CLOUD ASSEMBLY ============
-    Grid/CellSize: "0.05"  # 5cm resolution
-    Grid/RangeMax: "4.0"  # Max range for grid
-    Grid/RangeMin: "0.1"
+    Grid/CellSize: "0.1"  # 10cm resolution (reduced for stability)
+    Grid/RangeMax: "3.5"  # Max range for grid
+    Grid/RangeMin: "0.2"
     Grid/ClusterRadius: "0.1"
-    Grid/DepthDecimation: "4"  # Reduce point cloud density
+    Grid/DepthDecimation: "8"  # Higher decimation = fewer points
     Grid/FromDepth: "true"  # Generate grid from depth
     Grid/MaxGroundAngle: "45.0"
     Grid/MaxObstacleHeight: "2.0"
     Grid/MinGroundHeight: "0.0"
-    Grid/NormalK: "20"
+    Grid/NormalK: "10"
     Grid/3D: "true"  # Enable 3D occupancy grid
 
     # ============ 3D MAP CONFIGURATION ============
     # Point cloud map settings
     cloud_output_voxelized: true
-    cloud_voxel_size: 0.05
+    cloud_voxel_size: 0.1  # 10cm voxels (reduced density)
     cloud_subtract_filtering: false
+
+    # Map publishing (reduce rate)
+    map_filter_radius: 0.1
+    map_always_update: false
 
     # Octomap integration
     grid_from_depth: true

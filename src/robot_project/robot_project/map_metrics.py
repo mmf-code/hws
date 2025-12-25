@@ -57,16 +57,21 @@ class MapMetricsNode(Node):
 
         try:
             # Read points from message
-            points = list(pc2.read_points(
+            points_gen = pc2.read_points(
                 msg,
                 field_names=['x', 'y', 'z'],
                 skip_nans=True
-            ))
+            )
 
-            if len(points) == 0:
+            # Convert structured array to regular 2D array
+            points_list = []
+            for p in points_gen:
+                points_list.append([p[0], p[1], p[2]])
+
+            if len(points_list) == 0:
                 return
 
-            points_array = np.array(points)
+            points_array = np.array(points_list, dtype=np.float32)
 
             # Calculate metrics
             self.latest_metrics = {
@@ -146,7 +151,8 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

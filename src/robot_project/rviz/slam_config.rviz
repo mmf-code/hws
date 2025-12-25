@@ -6,186 +6,66 @@ Panels:
 Visualization Manager:
   Class: ""
   Displays:
-    # Grid
     - Class: rviz_default_plugins/Grid
       Name: Grid
       Enabled: true
-      Value: true
-      Line Style:
-        Value: Lines
-      Color: 160; 160; 164
-      Plane: XY
-      Plane Cell Count: 50
-      Cell Size: 1
+      Plane Cell Count: 30
 
-    # TF Frames
     - Class: rviz_default_plugins/TF
       Name: TF
-      Enabled: true
-      Value: true
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Frame Timeout: 15
-      Frames:
-        All Enabled: false
-        base_link:
-          Value: true
-        odom:
-          Value: true
-        map:
-          Value: true
-        camera_link:
-          Value: true
+      Enabled: false
 
-    # Robot Model
     - Class: rviz_default_plugins/RobotModel
       Name: Robot Model
       Enabled: true
-      Value: true
       Description Source: Topic
       Description Topic:
         Value: /robot_description
-      Alpha: 1
-      Visual Enabled: true
-      Collision Enabled: false
+      Update Interval: 0.2
 
-    # Odometry (EKF Filtered)
     - Class: rviz_default_plugins/Odometry
-      Name: EKF Odometry
+      Name: Odometry
       Enabled: true
-      Value: true
       Topic:
         Value: /odometry/filtered
-      Position Tolerance: 0.1
-      Angle Tolerance: 0.1
-      Keep: 100
+        Queue Size: 1
+      Keep: 20
       Shape: Arrow
-      Color: 0; 255; 0
-      Alpha: 0.8
-      Shaft Length: 0.3
-      Shaft Radius: 0.03
-      Head Length: 0.1
-      Head Radius: 0.05
+      Position Tolerance: 0.5
+      Angle Tolerance: 0.5
 
-    # Ground Truth Odometry
-    - Class: rviz_default_plugins/Odometry
-      Name: Ground Truth
-      Enabled: true
-      Value: true
-      Topic:
-        Value: /ground_truth/odom
-      Position Tolerance: 0.1
-      Angle Tolerance: 0.1
-      Keep: 100
-      Shape: Arrow
-      Color: 255; 255; 0
-      Alpha: 0.8
-      Shaft Length: 0.3
-      Shaft Radius: 0.03
-      Head Length: 0.1
-      Head Radius: 0.05
-
-    # 2D Occupancy Grid Map
     - Class: rviz_default_plugins/Map
-      Name: SLAM Map
+      Name: Map
       Enabled: true
-      Value: true
       Topic:
         Value: /map
+        Queue Size: 1
       Alpha: 0.7
-      Color Scheme: map
-      Draw Behind: false
-      Use Timestamp: false
+      Update Topic:
+        Value: ""
 
-    # 3D Point Cloud Map
     - Class: rviz_default_plugins/PointCloud2
-      Name: 3D Map
+      Name: PointCloud
       Enabled: true
-      Value: true
       Topic:
         Value: /rtabmap/cloud_map
-      Style: Flat Squares
-      Size (Pixels): 3
-      Color Transformer: RGB8
-      Alpha: 1
-      Decay Time: 0
-      Selectable: true
-      Queue Size: 10
-      Use Fixed Frame: true
-
-    # Real-time Depth Point Cloud
-    - Class: rviz_default_plugins/PointCloud2
-      Name: Depth Points
-      Enabled: false
-      Value: false
-      Topic:
-        Value: /camera/depth/points
+        Queue Size: 1
+      Size (Pixels): 1
       Style: Points
-      Size (Pixels): 2
-      Color Transformer: AxisColor
-      Axis: Z
-      Alpha: 0.5
-      Decay Time: 0
-      Queue Size: 5
-
-    # RGB Camera Image
-    - Class: rviz_default_plugins/Image
-      Name: RGB Camera
-      Enabled: false
-      Value: false
-      Topic:
-        Value: /camera/rgb/image_raw
-      Max Rate: 10
-
-    # IMU Visualization
-    - Class: rviz_default_plugins/Imu
-      Name: IMU
-      Enabled: false
-      Value: false
-      Topic:
-        Value: /imu/data
-      Axes Length: 0.3
-      Axes Radius: 0.03
-      Acceleration Arrow Scale: 0.1
-      Alpha: 1
-
-    # LaserScan (projected from depth)
-    - Class: rviz_default_plugins/LaserScan
-      Name: Depth Scan
-      Enabled: false
-      Value: false
-      Topic:
-        Value: /scan
-      Style: Points
-      Size (Pixels): 3
-      Color Transformer: Intensity
-      Alpha: 1
       Decay Time: 0
 
   Global Options:
     Background Color: 48; 48; 48
     Fixed Frame: map
-    Frame Rate: 30
+    Frame Rate: 15
 
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Name: Current View
-      Target Frame: base_link
       Distance: 15
+      Pitch: 0.7
       Yaw: 0.785
-      Pitch: 0.6
-      Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
-      Focal Shape Size: 0.05
-      Near Clip Distance: 0.01
-      Far Clip Distance: 100
 
 Window Geometry:
-  Width: 1600
-  Height: 900
-  X: 100
-  Y: 100
+  Width: 1280
+  Height: 720
