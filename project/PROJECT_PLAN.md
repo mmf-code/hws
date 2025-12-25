@@ -62,9 +62,56 @@
 | 2 | Depth → PointCloud2 | ✅ Gazebo plugin direkt üretiyor | `/camera/rgbd_camera/points` |
 | 3 | faster_lio **veya benzeri** | ✅ RTAB-Map Visual SLAM (LiDAR yok, RGBD var) | `rtabmap_rgbd.yaml` |
 | 4 | fast_lio **veya benzeri** | ✅ RTAB-Map ICP SLAM (karşılaştırma için) | `rtabmap_icp.yaml` |
-| 5 | Ground truth karşılaştırma | ✅ Gazebo p3d plugin + evaluation node | `evaluation_node.py` |
-| 6 | 3D mapping karşılaştırma | ✅ Point density, coverage, bounding box | `map_metrics.py` |
-| 7 | 2D projection + Nav2 | ✅ RTAB-Map grid_map + Nav2 stack | `full_navigation.launch.py` |
+| 5 | Ground truth karşılaştırma | ✅ RMSE, ATE, RPE metrikleri + CSV export | `evaluation_node.py` |
+| 6 | 3D mapping karşılaştırma | ✅ Density, coverage, volume + RGBD vs ICP karşılaştırma | `map_metrics.py`, `slam_comparison.py` |
+| 7 | 2D projection + Nav2 random waypoint | ✅ OccupancyGrid'den random waypoint + Nav2 navigation | `random_waypoint_nav.py`|
+
+### 1.1.1 Requirement 5 Detayı: Localization Performance
+
+**Metrikler:**
+- RMSE (Root Mean Square Error)
+- ATE (Absolute Trajectory Error)
+- RPE (Relative Pose Error)
+- Max Error, Standard Deviation
+
+**Karşılaştırma:**
+- EKF odometry vs Ground Truth
+- SLAM odometry vs Ground Truth
+- RGBD mode vs ICP mode
+
+**Çıktılar:**
+- `metrics_rgbd_*.csv` - RGBD mode metrikleri
+- `metrics_icp_*.csv` - ICP mode metrikleri
+- `filtered_*.csv` - EKF trajectory
+- `slam_*.csv` - SLAM trajectory
+
+### 1.1.2 Requirement 6 Detayı: 3D Mapping Comparison
+
+**Metrikler:**
+- Point count
+- 3D Density (pts/m³)
+- 2D Density (pts/m²)
+- Coverage (m²)
+- Volume (m³)
+- Bounding box dimensions
+
+**Karşılaştırma:**
+- `ros2 run robot_project slam_comparison` - RGBD vs ICP summary table
+
+### 1.1.3 Requirement 7 Detayı: Nav2 Random Waypoint Navigation
+
+**Algoritma:**
+1. `/map` (OccupancyGrid) dinle
+2. Free cell'lerden random waypoint üret
+3. Obstacle mesafesi kontrol et (safety margin)
+4. Nav2 `NavigateToPose` action client ile hedefe git
+5. Başarı/hata durumunu logla
+6. Sonraki waypoint'e geç
+
+**Parametreler:**
+- `num_waypoints`: Toplam waypoint sayısı (default: 10)
+- `min_obstacle_distance`: Minimum engel mesafesi (default: 0.5m)
+- `goal_timeout`: Hedef timeout (default: 120s)
 
 **Not:** faster_lio ve fast_lio 3D LiDAR gerektirir. Pioneer 3-DX'te sadece RGBD kamera var, bu yüzden "veya benzeri" ifadesine dayanarak **RTAB-Map** kullanıldı. RTAB-Map hem görsel hem ICP tabanlı SLAM destekler.
 
