@@ -40,7 +40,9 @@ Visualization Manager:
       Topic:
         Value: /map
         Queue Size: 1
-      Alpha: 0.7
+      Alpha: 1.0
+      Color Scheme: map
+      Draw Behind: true
       Update Topic:
         Value: ""
 
