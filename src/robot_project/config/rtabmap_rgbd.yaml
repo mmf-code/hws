@@ -99,6 +99,12 @@ rtabmap:
     # Octomap integration
     grid_from_depth: true
 
+    # ============ TF PUBLISHING ============
+    publish_tf: true  # CRITICAL: Enable map->odom transform
+    wait_for_transform: 0.5  # Wait up to 500ms for transforms
+    tf_delay: 0.05  # Publish TF 50ms in future (helps Nav2 interpolate)
+    tf_tolerance: 0.1  # Transform lookup tolerance
+
 # RGB-D Odometry node (if needed as backup)
 rgbd_odometry:
   ros__parameters:
