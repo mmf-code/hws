@@ -214,12 +214,19 @@ class OfficeCoverageNavigator(Node):
             self.get_logger().info(f'  - Region {region_id}: {len(cells)} cells')
 
     def _check_safety(self, x, y, margin, height, width):
-        """Check if cell has minimum safety clearance"""
+        """Check if cell has minimum safety clearance from obstacles
+
+        Note: We only consider occupied cells (>50) as obstacles.
+        Unknown cells (-1) are allowed since RTAB-Map has many unknown
+        cells during exploration. Free cells are 0.
+        """
         for dy in range(-margin, margin + 1):
             for dx in range(-margin, margin + 1):
                 ny, nx = y + dy, x + dx
                 if 0 <= ny < height and 0 <= nx < width:
-                    if self.map_data[ny, nx] != 0:  # Obstacle or unknown
+                    # Only block if it's an actual obstacle (occupied)
+                    # -1 = unknown, 0 = free, 100 = occupied
+                    if self.map_data[ny, nx] > 50:  # Obstacle
                         return False
         return True
 
