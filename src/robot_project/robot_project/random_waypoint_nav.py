@@ -21,6 +21,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
@@ -74,9 +75,16 @@ class RandomWaypointNavigator(Node):
         self.start_time = None
         self.navigation_times = []
 
+        # QoS for map (RTAB-Map uses TRANSIENT_LOCAL)
+        map_qos = QoSProfile(
+            depth=1,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=ReliabilityPolicy.RELIABLE
+        )
+
         # Subscribers
         self.map_sub = self.create_subscription(
-            OccupancyGrid, '/map', self.map_callback, 10,
+            OccupancyGrid, '/map', self.map_callback, map_qos,
             callback_group=self.callback_group)
         self.pose_sub = self.create_subscription(
             PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, 10,
