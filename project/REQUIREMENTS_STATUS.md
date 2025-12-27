@@ -112,7 +112,7 @@ ros2 run robot_project slam_comparison
 
 ## Requirement 7: 2D Projection + Autonomous Navigation
 
-**Status:** COMPLETE (Code Ready, Needs Integration Test)
+**Status:** PARTIAL (Code Complete, Nav2 Integration Needs Tuning)
 
 > "Use 2D projection of the computed 3D map for navigation. Assign random points in the environment to move the robot autonomously (e.g. move_base, nav2 packages for navigation)"
 
@@ -184,7 +184,28 @@ ros2 run robot_project random_waypoint_nav
 |-----|-------------|--------|-------|
 | 5 | Localization comparison with ground truth | COMPLETE | `evaluation_node.py` |
 | 6 | 3D mapping comparison (density, etc.) | COMPLETE | `map_metrics.py`, `slam_comparison.py` |
-| 7 | 2D projection + Nav2 random waypoint | COMPLETE | `random_waypoint_nav.py`, `full_navigation.launch.py` |
+| 7 | 2D projection + Nav2 random waypoint | PARTIAL | `random_waypoint_nav.py`, `full_navigation.launch.py` |
+
+---
+
+## Requirement 7 Test Results (27 Dec 2024)
+
+### What Works
+- RTAB-Map publishes `/map` (OccupancyGrid) - **VERIFIED**
+- `random_waypoint_nav.py` receives map and extracts free cells (213-460 cells found)
+- Random waypoints generated within distance constraints
+- Goals accepted by Nav2 action server
+
+### Current Issue
+- Nav2 lifecycle manager fails to activate controller_server
+- Goals accepted but immediately aborted (can't compute path)
+- Likely cause: odom/tf remapping mismatch between RTAB-Map and Nav2
+
+### Required Fix
+Nav2 params need adjustment for:
+1. `odom_topic` remapping to `/odometry/filtered`
+2. `robot_base_frame` → `base_link`
+3. Global costmap static layer → `/map`
 
 ---
 
