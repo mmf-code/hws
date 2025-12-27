@@ -112,6 +112,17 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time}]
         ),
 
+        # ========== STATIC TF: map -> odom ==========
+        # Initial identity transform (RTAB-Map will correct via loop closures)
+        # This enables TF lookup: map -> odom -> base_link
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='map_to_odom_tf',
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+            parameters=[{'use_sim_time': use_sim_time}]
+        ),
+
         # ========== SPAWN OFFICE ==========
         TimerAction(
             period=2.0,
@@ -300,6 +311,7 @@ def generate_launch_description():
                         'bash', '-c',
                         'export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ":" "\\n" | grep -v snap | tr "\\n" ":"); '
                         'unset GTK_PATH; '
+                        'export OGRE_RTT_MODE=FBO; '
                         f'rviz2 -d {rviz_config} --ros-args -p use_sim_time:=true'
                     ],
                     output='screen',
