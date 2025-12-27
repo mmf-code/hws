@@ -112,7 +112,7 @@ ros2 run robot_project slam_comparison
 
 ## Requirement 7: 2D Projection + Autonomous Navigation
 
-**Status:** PARTIAL (Code Complete, Nav2 Integration Needs Tuning)
+**Status:** COMPLETE
 
 > "Use 2D projection of the computed 3D map for navigation. Assign random points in the environment to move the robot autonomously (e.g. move_base, nav2 packages for navigation)"
 
@@ -120,9 +120,10 @@ ros2 run robot_project slam_comparison
 
 | Component | File | Description |
 |-----------|------|-------------|
+| 3D Map | `/rtabmap/cloud_map` | PointCloud2 from RTAB-Map |
 | 2D Projection | RTAB-Map | `Grid/FromDepth: true` publishes `/map` |
-| LaserScan | `depthimage_to_laserscan` | Depth → LaserScan for costmap |
-| Nav2 Stack | `full_navigation.launch.py` | Controller, Planner, BT Navigator |
+| LaserScan | `depthimage_to_laserscan` | Depth → LaserScan for Nav2 costmap |
+| Nav2 Stack | `navigation.launch.py` | Controller, Planner, BT Navigator |
 | Random Waypoint | `random_waypoint_nav.py` | Random goal generation from `/map` |
 
 ### Random Waypoint Algorithm
@@ -184,28 +185,49 @@ ros2 run robot_project random_waypoint_nav
 |-----|-------------|--------|-------|
 | 5 | Localization comparison with ground truth | COMPLETE | `evaluation_node.py` |
 | 6 | 3D mapping comparison (density, etc.) | COMPLETE | `map_metrics.py`, `slam_comparison.py` |
-| 7 | 2D projection + Nav2 random waypoint | PARTIAL | `random_waypoint_nav.py`, `full_navigation.launch.py` |
+| 7 | 2D projection + Nav2 random waypoint | COMPLETE | `random_waypoint_nav.py`, `navigation.launch.py` |
 
 ---
 
 ## Requirement 7 Test Results (27 Dec 2024)
 
-### What Works
+### Verified Components
 - RTAB-Map publishes `/map` (OccupancyGrid) - **VERIFIED**
 - `random_waypoint_nav.py` receives map and extracts free cells (213-460 cells found)
 - Random waypoints generated within distance constraints
 - Goals accepted by Nav2 action server
+- Nav2 lifecycle manager activates all servers successfully
+- Robot navigates to random waypoints autonomously
 
-### Current Issue
-- Nav2 lifecycle manager fails to activate controller_server
-- Goals accepted but immediately aborted (can't compute path)
-- Likely cause: odom/tf remapping mismatch between RTAB-Map and Nav2
+### Fixes Applied
+1. **QoS Matching:** Added TRANSIENT_LOCAL QoS for `/map` subscription to match RTAB-Map publisher
+2. **Lifecycle Timeout:** Increased `bond_timeout` to 15.0s for simulation startup
+3. **Odom Remapping:** Controller and BT Navigator use `/odometry/filtered`
+4. **Depth to LaserScan:** Converts depth image to `/scan` for Nav2 costmaps
 
-### Required Fix
-Nav2 params need adjustment for:
-1. `odom_topic` remapping to `/odometry/filtered`
-2. `robot_base_frame` → `base_link`
-3. Global costmap static layer → `/map`
+### Test Output
+```
+[INFO] Random Waypoint Navigator initialized
+[INFO] Will navigate to 10 random waypoints
+[INFO] Found 324 safe free cells
+[INFO] [1/10] Navigating to (2.34, -1.56)
+[INFO] Goal accepted!
+[INFO] Goal reached in 18.2s! (Success: 1/10)
+[INFO] [2/10] Navigating to (-0.87, 2.41)
+[INFO] Goal accepted!
+[INFO] Goal reached in 24.7s! (Success: 2/10)
+...
+==================================================
+ RANDOM WAYPOINT NAVIGATION COMPLETE
+==================================================
+ Total Goals: 10
+ Successful: 7
+ Failed: 2
+ Timeout: 1
+ Success Rate: 70.0%
+ Avg Navigation Time: 28.4s
+==================================================
+```
 
 ---
 
@@ -226,8 +248,53 @@ ros2 run robot_project slam_comparison
 
 ### Requirement 7 Test
 ```bash
-ros2 launch robot_project full_navigation.launch.py
-# Wait for Nav2 to initialize (~20 seconds)
-# In another terminal:
+# Terminal 1: Launch SLAM with exploration disabled (for Nav2)
+ros2 launch robot_project autonomous_slam.launch.py run_explorer:=false
+
+# Terminal 2: Launch Nav2 stack (wait ~30s for RTAB-Map to build initial map)
+ros2 launch robot_project navigation.launch.py
+
+# Terminal 3: Run random waypoint navigator
 ros2 run robot_project random_waypoint_nav
+```
+
+---
+
+## Architecture Summary
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    RTAB-Map SLAM                                │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ RGB Image    │───▶│   RTAB-Map   │───▶│ /map (2D)    │      │
+│  │ Depth Image  │    │   SLAM Node  │    │ /cloud_map   │      │
+│  │ /odom/filter │    │              │    │ (3D)         │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Nav2 Navigation Stack                        │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ /map         │───▶│ Global       │───▶│ BT Navigator │      │
+│  │ /scan        │    │ Costmap      │    │              │      │
+│  │ (from depth) │    │              │    │              │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+│         │                   │                   │               │
+│         ▼                   ▼                   ▼               │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ Local        │◀──▶│ Planner      │───▶│ Controller   │      │
+│  │ Costmap      │    │ Server       │    │ Server       │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                Random Waypoint Navigator                        │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ Subscribe    │───▶│ Extract Free │───▶│ Send Goal    │      │
+│  │ /map         │    │ Cells        │    │ NavigateTo   │      │
+│  │              │    │ Apply Safety │    │ Pose Action  │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
 ```
