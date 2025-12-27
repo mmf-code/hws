@@ -47,7 +47,7 @@ rtabmap:
     # ============ FEATURE DETECTION ============
     # GFTT/ORB features (good for indoor environments)
     Kp/DetectorStrategy: "6"  # 6=GFTT, 8=ORB
-    Kp/MaxFeatures: "500"
+    Kp/MaxFeatures: "1000"
     Kp/MaxDepth: "4.0"  # Max depth for features (camera range)
     Kp/MinDepth: "0.1"  # Min depth for features
 
@@ -75,10 +75,10 @@ rtabmap:
 
     # ============ POINT CLOUD ASSEMBLY ============
     Grid/CellSize: "0.1"  # 10cm resolution (reduced for stability)
-    Grid/RangeMax: "3.5"  # Max range for grid
+    Grid/RangeMax: "4.0"  # Max range for grid (matches camera)
     Grid/RangeMin: "0.2"
     Grid/ClusterRadius: "0.1"
-    Grid/DepthDecimation: "8"  # Higher decimation = fewer points
+    Grid/DepthDecimation: "4"  # Reduced decimation = more points (doubled density)
     Grid/FromDepth: "true"  # Generate grid from depth
     Grid/MaxGroundAngle: "45.0"
     Grid/MaxObstacleHeight: "2.0"
@@ -89,7 +89,7 @@ rtabmap:
     # ============ 3D MAP CONFIGURATION ============
     # Point cloud map settings
     cloud_output_voxelized: true
-    cloud_voxel_size: 0.1  # 10cm voxels (reduced density)
+    cloud_voxel_size: 0.05  # 5cm voxels (higher density)
     cloud_subtract_filtering: false
 
     # Map publishing (reduce rate)

@@ -52,14 +52,17 @@ Visualization Manager:
       Topic:
         Value: /rtabmap/cloud_map
         Queue Size: 1
-      Size (Pixels): 1
-      Style: Points
+      Size (Pixels): 4
+      Style: Flat Squares
       Decay Time: 0
+      Color Transformer: Intensity
+      Autocompute Value Bounds: true
+      Use Fixed Frame: true
 
   Global Options:
     Background Color: 48; 48; 48
     Fixed Frame: map
-    Frame Rate: 15
+    Frame Rate: 60
 
   Views:
     Current:
@@ -69,5 +72,5 @@ Visualization Manager:
       Yaw: 0.785
 
 Window Geometry:
-  Width: 1280
-  Height: 720
+  Width: 1920
+  Height: 1440
