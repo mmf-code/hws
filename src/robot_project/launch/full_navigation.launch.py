@@ -6,14 +6,17 @@ Launches complete navigation pipeline:
 1. Gazebo with Office World
 2. Robot with sensors
 3. robot_localization (EKF)
-4. RTAB-Map SLAM
+4. RTAB-Map SLAM (loads existing 447MB database by default)
 5. Depth to LaserScan conversion
 6. Nav2 Navigation Stack
 7. RViz visualization
 
 Usage:
+    # Load existing 447MB database and test navigation
     ros2 launch robot_project full_navigation.launch.py
-    ros2 launch robot_project full_navigation.launch.py slam_mode:=icp
+
+    # Start fresh SLAM (delete existing database)
+    Add --delete_db_on_start to RTAB-Map in launch file if needed
 """
 
 import os
@@ -219,7 +222,7 @@ def generate_launch_description():
                         ('cloud_map', '/rtabmap/cloud_map'),
                         ('grid_map', '/rtabmap/grid_map'),
                     ],
-                    arguments=['--delete_db_on_start']
+                    arguments=[]  # Empty = load existing 447MB database; use delete_db:=true to start fresh
                 )
             ]
         ),
