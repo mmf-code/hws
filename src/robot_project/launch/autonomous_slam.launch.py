@@ -116,15 +116,8 @@ def generate_launch_description():
         ),
 
         # ========== STATIC TF: map -> odom ==========
-        # Initial identity transform (RTAB-Map will correct via loop closures)
-        # This enables TF lookup: map -> odom -> base_link
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='map_to_odom_tf',
-            arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
-            parameters=[{'use_sim_time': use_sim_time}]
-        ),
+        # REMOVED: RTAB-Map now publishes this transform dynamically via publish_tf: true
+        # This fixes the TF timestamp extrapolation issue with Nav2
 
         # ========== SPAWN OFFICE ==========
         TimerAction(
@@ -208,7 +201,7 @@ def generate_launch_description():
                         ('cloud_map', '/rtabmap/cloud_map'),
                         ('grid_map', '/rtabmap/grid_map'),
                     ],
-                    arguments=['--delete_db_on_start'],
+                    arguments=[],
                     condition=IfCondition(
                         PythonExpression(["'", slam_mode, "' == 'rgbd'"])
                     )
@@ -240,7 +233,7 @@ def generate_launch_description():
                         ('cloud_map', '/rtabmap/cloud_map'),
                         ('grid_map', '/rtabmap/grid_map'),
                     ],
-                    arguments=['--delete_db_on_start'],
+                    arguments=[],
                     condition=IfCondition(
                         PythonExpression(["'", slam_mode, "' == 'icp'"])
                     )
