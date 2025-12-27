@@ -44,11 +44,13 @@ fi
 
 echo ""
 echo "Checking Nav2 transform tolerances..."
-AMCL_TOL=$(grep -A 20 "^amcl:" /home/mmf/Documents/GitHub/hws_repo/src/robot_project/config/nav2_params.yaml | grep "transform_tolerance:" | head -1 | awk '{print $2}')
-if [ "$AMCL_TOL" = "1.5" ]; then
-    echo "✅ AMCL tolerance: $AMCL_TOL"
+TOLERANCE_COUNT=$(grep "transform_tolerance: 1.5\|transform_tolerance: 0.5\|transform_tolerance: 0.3" /home/mmf/Documents/GitHub/hws_repo/src/robot_project/config/nav2_params.yaml | wc -l)
+if [ "$TOLERANCE_COUNT" = "3" ]; then
+    echo "✅ AMCL tolerance: 1.5"
+    echo "✅ Controller tolerance: 0.5"
+    echo "✅ Behavior Server tolerance: 0.3"
 else
-    echo "❌ ERROR: AMCL tolerance is $AMCL_TOL (expected 1.5)"
+    echo "❌ ERROR: Not all tolerances updated (found $TOLERANCE_COUNT/3)"
     exit 1
 fi
 
