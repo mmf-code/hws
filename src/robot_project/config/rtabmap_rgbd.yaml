@@ -34,7 +34,7 @@ rtabmap:
     # ============ RTAB-MAP CORE PARAMETERS ============
     # Database
     Rtabmap/DatabasePath: ""  # Empty = temp database
-    Rtabmap/DetectionRate: "0.5"  # Hz (loop closure detection rate - reduced for stability)
+    Rtabmap/DetectionRate: "1.0"  # Hz (loop closure detection rate - faster for better mapping)
     Rtabmap/CreateIntermediateNodes: "false"
     Rtabmap/PublishPdf: "false"  # Don't publish probability map
 
