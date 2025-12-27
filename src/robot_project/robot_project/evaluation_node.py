@@ -3,9 +3,9 @@
 Evaluation Node - Compares SLAM/EKF output with ground truth
 
 Subscribes to:
-    /ground_truth/odom - Perfect odometry from Gazebo p3d plugin
-    /odometry/filtered - EKF fused odometry (IMU + wheel)
-    /rtabmap/odom      - SLAM odometry (Visual or ICP)
+    /ground_truth/odom  - Perfect odometry from Gazebo p3d plugin
+    /odometry/filtered  - EKF fused odometry (IMU + wheel)
+    /localization_pose  - SLAM corrected pose from RTAB-Map
 
 Publishes:
     /evaluation/rmse   - Real-time RMSE value
@@ -24,12 +24,14 @@ Metrics:
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from std_msgs.msg import Float64
 import numpy as np
 from collections import deque
 import csv
 import os
 from datetime import datetime
+# SLAM corrected pose comes from /localization_pose topic (RTAB-Map output)
 
 
 class EvaluationNode(Node):
@@ -65,8 +67,9 @@ class EvaluationNode(Node):
             Odometry, '/ground_truth/odom', self.gt_callback, 10)
         self.filtered_sub = self.create_subscription(
             Odometry, '/odometry/filtered', self.filtered_callback, 10)
+        # SLAM corrected pose from RTAB-Map localization
         self.slam_sub = self.create_subscription(
-            Odometry, '/rtabmap/odom', self.slam_callback, 10)
+            PoseWithCovarianceStamped, '/localization_pose', self.slam_pose_callback, 10)
 
         # Publishers
         self.rmse_pub = self.create_publisher(Float64, '/evaluation/rmse', 10)
@@ -100,21 +103,47 @@ class EvaluationNode(Node):
         self.filtered_poses.append(pose)
         self.filtered_trajectory.append(pose)
 
-    def slam_callback(self, msg):
-        pose = self.extract_pose(msg)
+    def slam_pose_callback(self, msg):
+        """Handle PoseWithCovarianceStamped from /localization_pose"""
+        pose = {
+            'timestamp': msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9,
+            'x': msg.pose.pose.position.x,
+            'y': msg.pose.pose.position.y,
+            'z': msg.pose.pose.position.z
+        }
         self.slam_poses.append(pose)
         self.slam_trajectory.append(pose)
 
+    def find_closest_by_timestamp(self, target_ts, pose_list, max_diff=0.5):
+        """Find pose with closest timestamp within max_diff seconds"""
+        if len(pose_list) == 0:
+            return None
+
+        best_idx = 0
+        best_diff = abs(pose_list[0]['timestamp'] - target_ts)
+
+        for i, pose in enumerate(pose_list):
+            diff = abs(pose['timestamp'] - target_ts)
+            if diff < best_diff:
+                best_diff = diff
+                best_idx = i
+
+        if best_diff > max_diff:
+            return None
+        return pose_list[best_idx]
+
     def calculate_position_errors(self, gt_list, est_list):
-        """Calculate position errors between ground truth and estimate"""
-        n = min(len(gt_list), len(est_list))
-        if n < 2:
+        """Calculate position errors between ground truth and estimate using timestamp matching"""
+        if len(gt_list) < 2 or len(est_list) < 2:
             return None
 
         errors = []
-        for i in range(n):
-            gt = gt_list[i]
-            est = est_list[i]
+        for gt in gt_list:
+            # Find estimate with closest timestamp
+            est = self.find_closest_by_timestamp(gt['timestamp'], est_list)
+            if est is None:
+                continue
+
             error = np.sqrt(
                 (gt['x'] - est['x'])**2 +
                 (gt['y'] - est['y'])**2 +
@@ -122,6 +151,8 @@ class EvaluationNode(Node):
             )
             errors.append(error)
 
+        if len(errors) == 0:
+            return None
         return np.array(errors)
 
     def calculate_ate(self, errors):
@@ -136,24 +167,36 @@ class EvaluationNode(Node):
             return 0.0
         return np.sqrt(np.mean(errors**2))
 
-    def calculate_rpe(self, gt_list, est_list, delta=10):
+    def calculate_rpe(self, gt_list, est_list, time_delta=1.0):
         """
         Relative Pose Error - error in relative motion between poses
-        delta: number of poses between comparisons
+        time_delta: time difference in seconds between pose pairs
         """
-        n = min(len(gt_list), len(est_list))
-        if n < delta + 1:
+        if len(gt_list) < 10 or len(est_list) < 10:
             return 0.0
 
         rpe_errors = []
-        for i in range(n - delta):
+        for gt_start in gt_list[:-10]:
+            # Find GT pose ~time_delta seconds later
+            target_ts = gt_start['timestamp'] + time_delta
+            gt_end = self.find_closest_by_timestamp(target_ts, gt_list, max_diff=0.5)
+            if gt_end is None:
+                continue
+
+            # Find corresponding estimated poses
+            est_start = self.find_closest_by_timestamp(gt_start['timestamp'], est_list)
+            est_end = self.find_closest_by_timestamp(gt_end['timestamp'], est_list)
+
+            if est_start is None or est_end is None:
+                continue
+
             # Ground truth relative motion
-            gt_dx = gt_list[i + delta]['x'] - gt_list[i]['x']
-            gt_dy = gt_list[i + delta]['y'] - gt_list[i]['y']
+            gt_dx = gt_end['x'] - gt_start['x']
+            gt_dy = gt_end['y'] - gt_start['y']
 
             # Estimated relative motion
-            est_dx = est_list[i + delta]['x'] - est_list[i]['x']
-            est_dy = est_list[i + delta]['y'] - est_list[i]['y']
+            est_dx = est_end['x'] - est_start['x']
+            est_dy = est_end['y'] - est_start['y']
 
             # RPE is the error in relative motion
             rpe = np.sqrt((gt_dx - est_dx)**2 + (gt_dy - est_dy)**2)

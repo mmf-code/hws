@@ -97,7 +97,9 @@ def print_comparison_table(rgbd_metrics, icp_metrics, title):
         if key in ['timestamp', 'elapsed_time', 'slam_mode']:
             continue
         if key == 'num_points':
-            print(f'{key:<20} {int(rgbd_val):>15,} {int(icp_val):>15,} {int(icp_val - rgbd_val):>10,}')
+            rgbd_int = int(rgbd_val) if rgbd_val else 0
+            icp_int = int(icp_val) if icp_val else 0
+            print(f'{key:<20} {rgbd_int:>15,} {icp_int:>15,} {icp_int - rgbd_int:>+10,}')
         else:
             try:
                 rgbd_f = float(rgbd_val)
@@ -222,6 +224,23 @@ def generate_report(data_dir):
         icp_rpe = float(icp_loc.get('ekf_rpe', 0))
         better = 'RGBD' if rgbd_rpe < icp_rpe else 'ICP'
         print(f'{"EKF RPE (m)":<25} {rgbd_rpe:<15.4f} {icp_rpe:<15.4f} {better}')
+
+        # SLAM metrics (if available - both must have data for valid comparison)
+        rgbd_slam_rmse = float(rgbd_loc.get('slam_rmse', 0))
+        icp_slam_rmse = float(icp_loc.get('slam_rmse', 0))
+        if rgbd_slam_rmse > 0 and icp_slam_rmse > 0:
+            better = 'RGBD' if rgbd_slam_rmse < icp_slam_rmse else 'ICP'
+            print(f'{"SLAM RMSE (m)":<25} {rgbd_slam_rmse:<15.4f} {icp_slam_rmse:<15.4f} {better}')
+
+            rgbd_slam_ate = float(rgbd_loc.get('slam_ate', 0))
+            icp_slam_ate = float(icp_loc.get('slam_ate', 0))
+            better = 'RGBD' if rgbd_slam_ate < icp_slam_ate else 'ICP'
+            print(f'{"SLAM ATE (m)":<25} {rgbd_slam_ate:<15.4f} {icp_slam_ate:<15.4f} {better}')
+        elif rgbd_slam_rmse > 0 or icp_slam_rmse > 0:
+            # Only one has data - show but mark as incomplete
+            rgbd_str = f'{rgbd_slam_rmse:.4f}' if rgbd_slam_rmse > 0 else 'N/A'
+            icp_str = f'{icp_slam_rmse:.4f}' if icp_slam_rmse > 0 else 'N/A'
+            print(f'{"SLAM RMSE (m)":<25} {rgbd_str:<15} {icp_str:<15} {"INCOMPLETE"}')
 
     if rgbd_map and icp_map:
         rgbd_pts = int(rgbd_map.get('num_points', 0))
