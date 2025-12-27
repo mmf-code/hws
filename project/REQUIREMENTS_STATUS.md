@@ -126,55 +126,97 @@ ros2 run robot_project slam_comparison
 | Nav2 Stack | `navigation.launch.py` | Controller, Planner, BT Navigator |
 | Random Waypoint | `random_waypoint_nav.py` | Random goal generation from `/map` |
 
-### Random Waypoint Algorithm
+### Office Coverage Algorithm
 
 1. Subscribe to `/map` (OccupancyGrid from RTAB-Map)
-2. Extract free cells (value == 0)
-3. Apply safety margin (min_obstacle_distance)
-4. Generate random waypoint within distance constraints
+2. Subscribe to `/odometry/filtered` (robot pose from EKF)
+3. Extract free cells and classify:
+   - **Safe cells**: Have clearance from obstacles (min_obstacle_distance)
+   - **Edge cells**: Near walls but still safe (for edge mode)
+   - **Region cells**: Map divided into NxN grid regions
+4. Generate waypoint based on mode:
+   - **coverage**: Visit all regions systematically
+   - **edge**: Prefer cells near walls
+   - **random**: Completely random selection
 5. Send goal via Nav2 `NavigateToPose` action
-6. Handle success/failure/timeout
+6. Track visited regions for coverage metrics
 7. Proceed to next waypoint
+
+### Navigation Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `coverage` | Divides map into grid regions, visits each | Full office exploration |
+| `edge` | Prefers cells near walls/obstacles | Wall-following, perimeter scan |
+| `random` | Completely random waypoint selection | Basic random navigation |
 
 ### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `num_waypoints` | 10 | Total waypoints to visit |
-| `min_obstacle_distance` | 0.5m | Safety margin from obstacles |
+| `num_waypoints` | 15 | Total waypoints to visit |
+| `min_obstacle_distance` | 0.25m | Safety margin from obstacles |
+| `edge_distance` | 0.35m | Distance threshold for edge cells |
 | `goal_timeout` | 120s | Max time per goal |
-| `min_goal_distance` | 1.0m | Min distance from robot |
-| `max_goal_distance` | 8.0m | Max distance from robot |
+| `min_goal_distance` | 0.5m | Min distance from robot |
+| `max_goal_distance` | 15.0m | Max distance (cover whole office) |
+| `mode` | coverage | Navigation mode |
+| `grid_divisions` | 4 | Map divided into NxN regions |
 
 ### Launch Commands
 
 ```bash
-# Terminal 1: Full navigation system
-ros2 launch robot_project full_navigation.launch.py
+# Terminal 1: Launch SLAM (with explorer disabled for Nav2)
+ros2 launch robot_project autonomous_slam.launch.py run_explorer:=false
 
-# Terminal 2: Random waypoint navigator
+# Terminal 2: Launch Nav2 stack (wait ~30s for map to build)
+ros2 launch robot_project navigation.launch.py
+
+# Terminal 3: Run office coverage navigator
 ros2 run robot_project random_waypoint_nav
+
+# Alternative modes:
+ros2 run robot_project random_waypoint_nav --ros-args -p mode:=edge
+ros2 run robot_project random_waypoint_nav --ros-args -p mode:=random
+ros2 run robot_project random_waypoint_nav --ros-args -p num_waypoints:=20
 ```
 
 ### Expected Output
 
 ```
-[INFO] Random Waypoint Navigator initialized
-[INFO] Will navigate to 10 random waypoints
-[INFO] [1/10] Navigating to (3.45, 2.12)
+[INFO] ==================================================
+[INFO] Office Coverage Navigator initialized
+[INFO] Mode: coverage
+[INFO] Waypoints: 15
+[INFO] Min obstacle distance: 0.25m
+[INFO] ==================================================
+[INFO] Map analysis complete:
+[INFO]   - Total free cells: 1847
+[INFO]   - Edge cells (near walls): 523
+[INFO]   - Regions with cells: 12
+[INFO]   - Region (0, 1): 234 cells
+[INFO]   - Region (1, 2): 189 cells
+[INFO]   ...
+[INFO] ==================================================
+[INFO] Starting office coverage navigation!
+[INFO] ==================================================
+[INFO] Targeting unvisited region (2, 1)
+[INFO] [1/15] Navigating to (4.32, -2.15) [dist: 5.2m]
 [INFO] Goal accepted!
-[INFO] Goal reached in 25.3s! (Success: 1/10)
+[INFO] Goal reached in 18.4s! (Success: 1/15)
 ...
-==================================================
- RANDOM WAYPOINT NAVIGATION COMPLETE
-==================================================
- Total Goals: 10
- Successful: 8
- Failed: 1
+============================================================
+ OFFICE COVERAGE NAVIGATION COMPLETE
+============================================================
+ Mode: coverage
+ Total Goals: 15
+ Successful: 12
+ Failed: 2
  Timeout: 1
  Success Rate: 80.0%
- Avg Navigation Time: 32.5s
-==================================================
+ Avg Navigation Time: 24.6s
+ Regions Covered: 12/12 (100%)
+============================================================
 ```
 
 ---
