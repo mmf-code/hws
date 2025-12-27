@@ -54,6 +54,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     use_rviz = LaunchConfiguration('use_rviz', default='true')
     slam_mode = LaunchConfiguration('slam_mode', default='rgbd')
+    run_explorer = LaunchConfiguration('run_explorer', default='true')
 
     # Robot spawn position
     robot_x = LaunchConfiguration('robot_x', default='2.0')
@@ -75,6 +76,8 @@ def generate_launch_description():
         DeclareLaunchArgument('use_rviz', default_value='true'),
         DeclareLaunchArgument('slam_mode', default_value='rgbd',
                               description='SLAM mode: rgbd or icp'),
+        DeclareLaunchArgument('run_explorer', default_value='true',
+                              description='Run autonomous explorer (set false for Nav2)'),
         DeclareLaunchArgument('robot_x', default_value='2.0'),
         DeclareLaunchArgument('robot_y', default_value='0.0'),
         DeclareLaunchArgument('robot_z', default_value='0.1'),
@@ -261,7 +264,8 @@ def generate_launch_description():
                         'angular_speed': 0.6,
                         'min_distance': 0.8,
                         'critical_distance': 0.4,
-                    }]
+                    }],
+                    condition=IfCondition(run_explorer)
                 )
             ]
         ),
