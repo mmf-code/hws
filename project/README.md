@@ -211,3 +211,16 @@ ros2 run nav2_map_server map_saver_cli -f project/maps/office_map
 # Record bag
 ros2 bag record -o project/results/test_run /odom /imu/data /ground_truth/odom
 ```
+
+
+ # RGBD mode ile autonomous SLAM
+  ros2 launch robot_project autonomous_slam.launch.py slam_mode:=rgbd
+
+  # ICP mode ile autonomous SLAM
+  ros2 launch robot_project autonomous_slam.launch.py slam_mode:=icp
+
+  # Random waypoint navigation (Nav2 gerekli)
+  ros2 run robot_project random_waypoint_nav
+
+  # SLAM karşılaştırma raporu
+  ros2 run robot_project slam_comparison --data-dir project/results/data
