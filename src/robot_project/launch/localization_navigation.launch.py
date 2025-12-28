@@ -227,9 +227,10 @@ def generate_launch_description():
                         {
                             'use_sim_time': use_sim_time,
                             'database_path': '~/.ros/rtabmap.db',
-                            'Mem/IncrementalMemory': 'false',  # LOCALIZATION mode - don't build new map
+                            'Mem/IncrementalMemory': 'true',  # SLAM mode - enables map->odom TF
                             'Mem/InitWMWithAllNodes': 'true',  # Load entire map at startup
                             'Grid/FromDepth': 'true',
+                            'publish_tf': 'true',  # CRITICAL: publish map->odom transform
                         }
                     ],
                     remappings=[
