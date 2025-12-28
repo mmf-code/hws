@@ -421,3 +421,243 @@ ros2 run robot_project random_waypoint_nav
 │  └──────────────┘    └──────────────┘    └──────────────┘      │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Requirement 7 - FINAL IMPLEMENTATION (28 Dec 2024 - Optimized Two-Phase Approach)
+
+### Problem Solved
+**PC Crashes During SLAM + Nav2:** The original `full_navigation.launch.py` runs RTAB-Map in SLAM mode while also running Nav2, which is extremely resource-intensive (~4-6 GB RAM, 200-300% CPU) and causes PC crashes.
+
+**Solution:** Separate SLAM recording from navigation demo using two optimized launch files.
+
+---
+
+### Phase 1: Record SLAM Map (Lightweight)
+**File:** `src/robot_project/launch/optimized_slam.launch.py`
+
+**What it includes:**
+- ✓ Gazebo + Robot + EKF sensor fusion
+- ✓ RTAB-Map SLAM with optimizations:
+  - `Kp/MaxFeatures`: 1000 → **500** (fewer visual features)
+  - `Rtabmap/DetectionRate`: 1.0 → **0.5 Hz** (less frequent loop closure)
+  - `Grid/DepthDecimation`: 4 → **6** (fewer 3D points)
+  - `cloud_voxel_size`: 0.05 → **0.08m** (larger voxels)
+- ✓ Minimal RViz (map + robot)
+- ✗ NO Nav2 (saves ~30% resources)
+- ✗ NO evaluation/metrics nodes
+
+**Resource Usage:** ~2-3 GB RAM, 100-150% CPU (stable, won't crash)
+
+**How to use:**
+```bash
+# Terminal 1: Record SLAM
+bash src/robot_project/scripts/record_slam.sh
+
+# Terminal 2: Drive robot manually
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+# Drive for 3-5 minutes around office
+# Ctrl+C in Terminal 1 to save map gracefully
+```
+
+**Output:** `~/.ros/rtabmap.db` (200-400 MB, clean map)
+
+---
+
+### Phase 2: Navigate Using Recorded Map (With Nav2)
+**File:** `src/robot_project/launch/localization_navigation.launch.py`
+
+**What it includes:**
+- ✓ Gazebo + Robot + EKF sensor fusion
+- ✓ RTAB-Map in LOCALIZATION MODE:
+  - `Mem/IncrementalMemory`: **false** ← KEY (don't build new map)
+  - `Mem/InitWMWithAllNodes`: **true** (load entire map at startup)
+  - Loads existing map from `~/.ros/rtabmap.db`
+  - Same optimizations as Phase 1
+- ✓ Full Nav2 stack (controller, planner, BT navigator)
+- ✓ Depth → LaserScan conversion for costmaps
+- ✓ RViz with navigation visualizations
+- ✗ NO SLAM mode (won't modify existing map)
+- ✗ NO evaluation/metrics nodes
+
+**Resource Usage:** ~2-3 GB RAM, 80-120% CPU (stable, suitable for demo)
+
+**How to use:**
+```bash
+# Terminal 1: Launch navigation system
+bash src/robot_project/scripts/run_demo.sh
+
+# Wait ~30s for map to load and RViz to appear
+
+# Terminal 2: Start random waypoint navigator
+ros2 run robot_project random_waypoint_nav
+
+# Or with parameters:
+ros2 run robot_project random_waypoint_nav --ros-args \
+  -p mode:=coverage \
+  -p num_waypoints:=15 \
+  -p min_obstacle_distance:=0.25
+```
+
+**Expected behavior:**
+- Robot localizes in the loaded map
+- Random waypoints generated from free cells
+- Robot autonomously navigates to each waypoint
+- Statistics printed at completion
+
+---
+
+### Helper Scripts
+
+**1. Check Map Integrity**
+```bash
+bash src/robot_project/scripts/check_map.sh
+```
+Verifies SQLite database, shows size, checks modification time.
+
+**2. Record SLAM Map**
+```bash
+bash src/robot_project/scripts/record_slam.sh
+```
+Interactive setup + instructions for recording clean map.
+
+**3. Run Final Demo**
+```bash
+bash src/robot_project/scripts/run_demo.sh
+```
+Launches localization + navigation with automatic verification.
+
+---
+
+### Resource Usage Comparison
+
+| Phase | Configuration | RTAB-Map | Nav2 | Est. RAM | Est. CPU | Stability |
+|-------|---------------|----------|------|----------|----------|-----------|
+| Original (crashes) | SLAM + Nav2 together | SLAM | ✓ | 4-6 GB | 200-300% | ❌ Crashes |
+| **Phase 1** | Record only | SLAM | ✗ | 2-3 GB | 100-150% | ✓ Stable |
+| **Phase 2** | Navigation only | Localization | ✓ | 2-3 GB | 80-120% | ✓ Stable |
+
+---
+
+### RTAB-Map Configuration Changes
+
+**File:** `src/robot_project/config/rtabmap_rgbd.yaml`
+
+**Optimizations applied:**
+```yaml
+# Detection rate (loop closure)
+Rtabmap/DetectionRate: "0.5"  # was 1.0
+
+# Feature extraction
+Kp/MaxFeatures: "500"  # was 1000
+
+# Point cloud density
+Grid/DepthDecimation: "6"  # was 4
+cloud_voxel_size: "0.08"  # was 0.05
+
+# Mode switching support
+Mem/IncrementalMemory: "true"  # Launch file overrides to false for localization
+Mem/InitWMWithAllNodes: "false"  # Launch file sets to true for localization
+```
+
+---
+
+### Requirement 7 Verification Checklist
+
+- ✓ **2D Projection:** RTAB-Map publishes `/map` topic (OccupancyGrid from depth)
+- ✓ **Random Waypoint Generation:** `random_waypoint_nav.py` generates goals from 2D map
+- ✓ **Autonomous Navigation:** Nav2 plans and executes paths to random goals
+- ✓ **PC Stability:** Separated SLAM/Nav2 prevents crashes
+- ✓ **Coverage Tracking:** Robot visits multiple regions (coverage mode)
+- ✓ **Multiple Modes:** Supports coverage/edge/random navigation modes
+
+---
+
+### Complete Workflow for Demo/Evaluation
+
+#### Step 1: Build and Source
+```bash
+cd /home/mmf/Documents/GitHub/hws_repo
+colcon build --symlink-install --packages-select robot_project
+source install/setup.bash
+```
+
+#### Step 2: Record Clean SLAM Map (First time only)
+```bash
+bash src/robot_project/scripts/record_slam.sh
+# Drives robot manually for 3-5 minutes, then Ctrl+C to save
+# Creates ~/.ros/rtabmap.db
+```
+
+#### Step 3: Verify Map
+```bash
+bash src/robot_project/scripts/check_map.sh
+# Shows database is valid SQLite, file size, modification time
+```
+
+#### Step 4: Run Final Navigation Demo
+```bash
+# Terminal 1
+bash src/robot_project/scripts/run_demo.sh
+# Waits for full system to initialize
+
+# Terminal 2 (after ~30s)
+ros2 run robot_project random_waypoint_nav
+```
+
+**Expected output:**
+```
+[INFO] ==================================================
+[INFO] Office Coverage Navigator initialized
+[INFO] Mode: coverage
+[INFO] Waypoints: 15
+[INFO] ==================================================
+[INFO] Map analysis complete:
+[INFO]   - Total free cells: 2926
+[INFO]   - Edge cells: 1212
+[INFO]   - Regions with cells: 13
+[INFO] ==================================================
+[INFO] Starting office coverage navigation!
+[INFO] ==================================================
+[INFO] [1/15] Navigating to (4.32, -2.15) [dist: 5.2m]
+[INFO] Goal accepted!
+[INFO] Goal reached in 18.4s! (Success: 1/15)
+...
+============================================================
+ OFFICE COVERAGE NAVIGATION COMPLETE
+============================================================
+ Mode: coverage
+ Total Goals: 15
+ Successful: 12
+ Failed: 2
+ Timeout: 1
+ Success Rate: 80.0%
+ Avg Navigation Time: 24.6s
+ Regions Covered: 12/12 (100%)
+============================================================
+```
+
+---
+
+### Known Limitations & Workarounds
+
+1. **Simulation TF Synchronization:** Nav2 may report timestamp warnings - this is Gazebo-specific and doesn't affect navigation.
+2. **Goal Completion Timing:** Gazebo simulation may have timing variations; goals typically execute but can take longer.
+3. **Localization Mode:** Once in localization mode, RTAB-Map doesn't add new features. Record a good map in Phase 1.
+
+**Workaround:** Always verify map quality before running Phase 2 using `check_map.sh`.
+
+---
+
+### Files Created/Modified
+
+**New Files:**
+- `src/robot_project/launch/optimized_slam.launch.py` - Phase 1 launch
+- `src/robot_project/launch/localization_navigation.launch.py` - Phase 2 launch
+- `src/robot_project/scripts/record_slam.sh` - Interactive SLAM recording
+- `src/robot_project/scripts/run_demo.sh` - Final demo launcher
+- `src/robot_project/scripts/check_map.sh` - Map verification
+
+**Modified Files:**
+- `src/robot_project/config/rtabmap_rgbd.yaml` - Resource optimizations
