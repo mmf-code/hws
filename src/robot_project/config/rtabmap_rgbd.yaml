@@ -34,20 +34,20 @@ rtabmap:
     # ============ RTAB-MAP CORE PARAMETERS ============
     # Database
     Rtabmap/DatabasePath: ""  # Empty = temp database
-    Rtabmap/DetectionRate: "1.0"  # Hz (loop closure detection rate - faster for better mapping)
+    Rtabmap/DetectionRate: "0.5"  # Hz (reduced from 1.0 to lower CPU usage - less frequent loop closure)
     Rtabmap/CreateIntermediateNodes: "false"
     Rtabmap/PublishPdf: "false"  # Don't publish probability map
 
     # Memory Management
-    Mem/IncrementalMemory: "true"  # Online SLAM mode
-    Mem/InitWMWithAllNodes: "true"
+    Mem/IncrementalMemory: "true"  # Online SLAM mode (can be overridden by launch file)
+    Mem/InitWMWithAllNodes: "false"  # Default to SLAM, set to "true" in localization mode
     Mem/STMSize: "30"  # Short-term memory size
     Mem/RehearsalSimilarity: "0.6"  # Similarity threshold for rehearsal
 
     # ============ FEATURE DETECTION ============
     # GFTT/ORB features (good for indoor environments)
     Kp/DetectorStrategy: "6"  # 6=GFTT, 8=ORB
-    Kp/MaxFeatures: "1000"
+    Kp/MaxFeatures: "500"  # Reduced from 1000 to lower CPU usage
     Kp/MaxDepth: "4.0"  # Max depth for features (camera range)
     Kp/MinDepth: "0.1"  # Min depth for features
 
@@ -78,7 +78,7 @@ rtabmap:
     Grid/RangeMax: "4.0"  # Max range for grid (matches camera)
     Grid/RangeMin: "0.2"
     Grid/ClusterRadius: "0.1"
-    Grid/DepthDecimation: "4"  # Reduced decimation = more points (doubled density)
+    Grid/DepthDecimation: "6"  # Increased from 4 (fewer points = lower CPU)
     Grid/FromDepth: "true"  # Generate grid from depth
     Grid/MaxGroundAngle: "45.0"
     Grid/MaxObstacleHeight: "2.0"
@@ -89,7 +89,7 @@ rtabmap:
     # ============ 3D MAP CONFIGURATION ============
     # Point cloud map settings
     cloud_output_voxelized: true
-    cloud_voxel_size: 0.05  # 5cm voxels (higher density)
+    cloud_voxel_size: 0.08  # Increased from 0.05 (8cm voxels = lower density = lower CPU)
     cloud_subtract_filtering: false
 
     # Map publishing (reduce rate)
