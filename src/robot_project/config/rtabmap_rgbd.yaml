@@ -34,7 +34,7 @@ rtabmap:
     # ============ RTAB-MAP CORE PARAMETERS ============
     # Database
     Rtabmap/DatabasePath: ""  # Empty = temp database
-    Rtabmap/DetectionRate: "0.5"  # Hz (reduced from 1.0 to lower CPU usage - less frequent loop closure)
+    Rtabmap/DetectionRate: "0.5"  # Hz (matches database creation)
     Rtabmap/CreateIntermediateNodes: "false"
     Rtabmap/PublishPdf: "false"  # Don't publish probability map
 
@@ -47,7 +47,7 @@ rtabmap:
     # ============ FEATURE DETECTION ============
     # GFTT/ORB features (good for indoor environments)
     Kp/DetectorStrategy: "6"  # 6=GFTT, 8=ORB
-    Kp/MaxFeatures: "500"  # Reduced from 1000 to lower CPU usage
+    Kp/MaxFeatures: "500"  # Must match database creation setting
     Kp/MaxDepth: "4.0"  # Max depth for features (camera range)
     Kp/MinDepth: "0.1"  # Min depth for features
 
@@ -78,7 +78,7 @@ rtabmap:
     Grid/RangeMax: "4.0"  # Max range for grid (matches camera)
     Grid/RangeMin: "0.2"
     Grid/ClusterRadius: "0.1"
-    Grid/DepthDecimation: "6"  # Increased from 4 (fewer points = lower CPU)
+    Grid/DepthDecimation: "6"  # Matches database creation
     Grid/FromDepth: "true"  # Generate grid from depth
     Grid/MaxGroundAngle: "45.0"
     Grid/MaxObstacleHeight: "2.0"
@@ -89,7 +89,7 @@ rtabmap:
     # ============ 3D MAP CONFIGURATION ============
     # Point cloud map settings
     cloud_output_voxelized: true
-    cloud_voxel_size: 0.08  # Increased from 0.05 (8cm voxels = lower density = lower CPU)
+    cloud_voxel_size: 0.08  # Matches database creation
     cloud_subtract_filtering: false
 
     # Map publishing (reduce rate)
