@@ -30,8 +30,8 @@ class AutonomousExplorer(Node):
 
         # Parameters
         self.declare_parameter('mode', 'free')  # 'free' or 'waypoint'
-        self.declare_parameter('linear_speed', 0.35)
-        self.declare_parameter('angular_speed', 0.6)
+        self.declare_parameter('linear_speed', 0.65)
+        self.declare_parameter('angular_speed', 1.2)
         self.declare_parameter('min_distance', 0.8)
         self.declare_parameter('critical_distance', 0.4)
 

@@ -198,9 +198,9 @@ def generate_launch_description():
                         rtabmap_rgbd_config,
                         {
                             'use_sim_time': use_sim_time,
-                            'database_path': '~/.ros/rtabmap.db',
+                            'database_path': os.path.expanduser('~/.ros/rtabmap.db'),
                             'Mem/IncrementalMemory': 'true',  # SLAM mode - build new map
-                            'Mem/InitWMWithAllNodes': 'false',  # Start fresh
+                            'Mem/InitWMWithAllNodes': 'true',  # Load existing map
                             'Grid/FromDepth': 'true',
                         }
                     ],
@@ -213,7 +213,7 @@ def generate_launch_description():
                         ('cloud_map', '/rtabmap/cloud_map'),
                         ('grid_map', '/rtabmap/grid_map'),
                     ],
-                    arguments=['--delete_db_on_start']  # Fresh start - clean recording
+                    # Load existing map for incremental mapping (no --delete_db_on_start)
                 )
             ]
         ),
