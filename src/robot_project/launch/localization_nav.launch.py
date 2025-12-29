@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-Full Navigation System Launch File
+Localization + Navigation Launch File - Phase 2: Navigate with Saved Map
 
-Launches complete navigation pipeline:
-1. Gazebo with Office World
-2. Robot with sensors
-3. robot_localization (EKF)
-4. RTAB-Map SLAM (loads existing 447MB database by default)
-5. Depth to LaserScan conversion
-6. Nav2 Navigation Stack
-7. RViz visualization
+This launch file loads a pre-built RTAB-Map database and runs Nav2 for navigation.
+Use this AFTER you have created a map with slam_mapping.launch.py
 
 Usage:
-    # Load existing 447MB database and test navigation
-    ros2 launch robot_project full_navigation.launch.py
+    # Navigate with saved map (default path)
+    ros2 launch robot_project localization_nav.launch.py
 
-    # Start fresh SLAM (delete existing database)
-    Add --delete_db_on_start to RTAB-Map in launch file if needed
+    # Navigate with custom map path
+    ros2 launch robot_project localization_nav.launch.py db_path:=~/maps/my_map.db
+
+    # Run random waypoint navigation
+    ros2 launch robot_project localization_nav.launch.py use_random_nav:=true
+
+Workflow:
+    1. First run: ros2 launch robot_project slam_mapping.launch.py
+    2. Explore the environment (map is saved automatically)
+    3. Stop the mapping launch
+    4. Then run: ros2 launch robot_project localization_nav.launch.py
 """
 
 import os
@@ -28,11 +31,10 @@ from launch.actions import (
     TimerAction,
     ExecuteProcess,
     SetEnvironmentVariable,
-    GroupAction
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, Command, PythonExpression
+from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
@@ -50,15 +52,18 @@ def generate_launch_description():
     office_urdf_file = os.path.join(pkg_cpr_office, 'urdf', 'office_geometry.urdf.xacro')
     world_file = os.path.join(pkg_robot_hw1, 'worlds', 'empty_office.world')
     ekf_config = os.path.join(pkg_robot_project, 'config', 'robot_localization.yaml')
-    rtabmap_rgbd_config = os.path.join(pkg_robot_project, 'config', 'rtabmap_rgbd.yaml')
+    rtabmap_config = os.path.join(pkg_robot_project, 'config', 'rtabmap_rgbd.yaml')
     nav2_params = os.path.join(pkg_robot_project, 'config', 'nav2_params.yaml')
     rviz_config = os.path.join(pkg_robot_project, 'rviz', 'slam_config.rviz')
 
     # Launch configurations
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     use_rviz = LaunchConfiguration('use_rviz', default='true')
-    use_nav2 = LaunchConfiguration('use_nav2', default='true')
+    use_random_nav = LaunchConfiguration('use_random_nav', default='false')
     autostart = LaunchConfiguration('autostart', default='true')
+
+    # Database path for loading map - must match the saved map
+    db_path = LaunchConfiguration('db_path', default=os.path.expanduser('~/maps/office_slam_final.db'))
 
     # Robot spawn position
     robot_x = LaunchConfiguration('robot_x', default='2.0')
@@ -86,9 +91,12 @@ def generate_launch_description():
         # ========== ARGUMENTS ==========
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('use_rviz', default_value='true'),
-        DeclareLaunchArgument('use_nav2', default_value='true',
-                              description='Enable Nav2 navigation stack'),
+        DeclareLaunchArgument('use_random_nav', default_value='false',
+                              description='Run random waypoint navigator'),
         DeclareLaunchArgument('autostart', default_value='true'),
+        DeclareLaunchArgument('db_path',
+                              default_value=os.path.expanduser('~/maps/office_slam_final.db'),
+                              description='Path to RTAB-Map database'),
         DeclareLaunchArgument('robot_x', default_value='2.0'),
         DeclareLaunchArgument('robot_y', default_value='0.0'),
         DeclareLaunchArgument('robot_z', default_value='0.1'),
@@ -170,7 +178,7 @@ def generate_launch_description():
 
         # ========== DEPTH TO LASERSCAN ==========
         TimerAction(
-            period=8.0,
+            period=7.0,
             actions=[
                 Node(
                     package='depthimage_to_laserscan',
@@ -194,9 +202,25 @@ def generate_launch_description():
             ]
         ),
 
-        # ========== RTAB-MAP SLAM ==========
+        # ========== RTAB-MAP (Localization Mode - Load Saved Map) ==========
+        # Log which database is being loaded
         TimerAction(
-            period=10.0,
+            period=8.0,
+            actions=[
+                ExecuteProcess(
+                    cmd=['bash', '-c',
+                         f'echo ""; echo "========================================"; '
+                         f'echo "LOCALIZATION + NAVIGATION MODE"; '
+                         f'echo "Loading map from: ~/maps/office_slam_final.db"; '
+                         f'echo "Make sure this map exists!"; '
+                         f'ls -lh ~/maps/office_slam_final.db 2>/dev/null || echo "WARNING: Map file not found!"; '
+                         f'echo "========================================"; echo ""'],
+                    output='screen'
+                )
+            ]
+        ),
+        TimerAction(
+            period=9.0,
             actions=[
                 Node(
                     package='rtabmap_slam',
@@ -204,13 +228,13 @@ def generate_launch_description():
                     name='rtabmap',
                     output='screen',
                     parameters=[
-                        rtabmap_rgbd_config,
+                        rtabmap_config,
                         {
                             'use_sim_time': use_sim_time,
-                            'database_path': '~/.ros/rtabmap.db',
-                            'Mem/IncrementalMemory': 'true',
-                            'Mem/InitWMWithAllNodes': 'false',
-                            'Grid/FromDepth': 'true',
+                            'database_path': db_path,
+                            # LOCALIZATION Mode - Use Saved Map
+                            'Mem/IncrementalMemory': 'false',  # Don't add new nodes
+                            'Mem/InitWMWithAllNodes': 'true',  # Load all nodes from DB
                         }
                     ],
                     remappings=[
@@ -222,14 +246,14 @@ def generate_launch_description():
                         ('cloud_map', '/rtabmap/cloud_map'),
                         ('grid_map', '/rtabmap/grid_map'),
                     ],
-                    arguments=[]  # Empty = load existing 447MB database; use delete_db:=true to start fresh
+                    arguments=[]  # Don't delete DB - load existing
                 )
             ]
         ),
 
         # ========== NAV2 STACK ==========
         TimerAction(
-            period=15.0,
+            period=14.0,
             actions=[
                 # Lifecycle Manager
                 Node(
@@ -246,8 +270,7 @@ def generate_launch_description():
                             'behavior_server',
                             'bt_navigator',
                         ]
-                    }],
-                    condition=IfCondition(use_nav2)
+                    }]
                 ),
                 # Controller Server
                 Node(
@@ -259,8 +282,7 @@ def generate_launch_description():
                     remappings=[
                         ('cmd_vel', '/cmd_vel'),
                         ('odom', '/odometry/filtered'),
-                    ],
-                    condition=IfCondition(use_nav2)
+                    ]
                 ),
                 # Planner Server
                 Node(
@@ -268,8 +290,7 @@ def generate_launch_description():
                     executable='planner_server',
                     name='planner_server',
                     output='screen',
-                    parameters=[configured_params],
-                    condition=IfCondition(use_nav2)
+                    parameters=[configured_params]
                 ),
                 # Behavior Server
                 Node(
@@ -277,8 +298,7 @@ def generate_launch_description():
                     executable='behavior_server',
                     name='behavior_server',
                     output='screen',
-                    parameters=[configured_params],
-                    condition=IfCondition(use_nav2)
+                    parameters=[configured_params]
                 ),
                 # BT Navigator
                 Node(
@@ -289,42 +309,39 @@ def generate_launch_description():
                     parameters=[configured_params],
                     remappings=[
                         ('odom', '/odometry/filtered'),
-                    ],
-                    condition=IfCondition(use_nav2)
+                    ]
                 ),
             ]
         ),
 
-        # ========== EVALUATION NODES ==========
+        # ========== RANDOM WAYPOINT NAVIGATOR (optional) ==========
         TimerAction(
-            period=12.0,
+            period=20.0,
             actions=[
                 Node(
                     package='robot_project',
-                    executable='evaluation_node',
-                    name='evaluation_node',
+                    executable='random_waypoint_nav',
+                    name='random_waypoint_nav',
                     output='screen',
-                    parameters=[{'use_sim_time': use_sim_time}]
-                ),
-                Node(
-                    package='robot_project',
-                    executable='map_metrics',
-                    name='map_metrics',
-                    output='screen',
-                    parameters=[{'use_sim_time': use_sim_time}]
+                    parameters=[{
+                        'use_sim_time': use_sim_time,
+                        'num_waypoints': 20,
+                        'mode': 'coverage',
+                        'min_obstacle_distance': 0.30,
+                        'goal_timeout': 120.0,
+                    }],
+                    condition=IfCondition(use_random_nav)
                 )
             ]
         ),
 
         # ========== RVIZ ==========
-        # Use ExecuteProcess to clean Snap library paths that conflict with apt ROS2
         TimerAction(
-            period=16.0,
+            period=12.0,
             actions=[
                 ExecuteProcess(
                     cmd=[
                         'bash', '-c',
-                        # Filter out Snap paths from LD_LIBRARY_PATH to avoid libpthread conflict
                         'export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ":" "\\n" | grep -v snap | tr "\\n" ":"); '
                         'unset GTK_PATH; '
                         f'rviz2 -d {rviz_config} --ros-args -p use_sim_time:=true'
