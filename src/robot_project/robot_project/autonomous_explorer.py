@@ -10,6 +10,8 @@ Two modes:
    - Stuck recovery
 
 2. WAYPOINT mode: Navigates to predefined waypoints using Nav2
+
+Graceful shutdown: When killed (Ctrl+C or pkill), robot stops safely.
 """
 
 import rclpy
@@ -22,16 +24,23 @@ from nav2_msgs.action import NavigateToPose
 import math
 import numpy as np
 from cv_bridge import CvBridge
+import signal
+import sys
+import threading
 
 
 class AutonomousExplorer(Node):
     def __init__(self):
         super().__init__('autonomous_explorer')
 
+        # Shutdown flag
+        self._shutdown_requested = False
+        self._stop_sent = False
+
         # Parameters
         self.declare_parameter('mode', 'free')  # 'free' or 'waypoint'
-        self.declare_parameter('linear_speed', 0.65)
-        self.declare_parameter('angular_speed', 1.2)
+        self.declare_parameter('linear_speed', 0.9)
+        self.declare_parameter('angular_speed', 1.8)
         self.declare_parameter('min_distance', 0.8)
         self.declare_parameter('critical_distance', 0.4)
 
@@ -108,6 +117,9 @@ class AutonomousExplorer(Node):
 
     def depth_callback(self, msg):
         """Process depth image with 5-region detection (hw3 style)"""
+        if self._shutdown_requested:
+            return
+
         try:
             depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
             height, width = depth_image.shape[:2]
@@ -164,6 +176,11 @@ class AutonomousExplorer(Node):
 
     def free_exploration_loop(self):
         """HW3-style free exploration with obstacle avoidance"""
+        # Check shutdown flag
+        if self._shutdown_requested:
+            self.stop_robot()
+            return
+
         twist = Twist()
 
         # Detect if stuck
@@ -258,6 +275,11 @@ class AutonomousExplorer(Node):
 
     def waypoint_exploration_loop(self):
         """Waypoint-based exploration with obstacle avoidance"""
+        # Check shutdown flag
+        if self._shutdown_requested:
+            self.stop_robot()
+            return
+
         if self.current_waypoint_idx >= len(self.waypoints):
             self.get_logger().info('All waypoints completed! Restarting...')
             self.current_waypoint_idx = 0
@@ -308,28 +330,65 @@ class AutonomousExplorer(Node):
         self.cmd_vel_pub.publish(twist)
 
     def stop_robot(self):
-        """Stop the robot"""
+        """Stop the robot - send multiple times to ensure it stops"""
+        if self._stop_sent:
+            return
+        self._stop_sent = True
+
+        self.get_logger().info('STOPPING ROBOT...')
         twist = Twist()
-        self.cmd_vel_pub.publish(twist)
+        # Send stop command multiple times
+        for _ in range(10):
+            self.cmd_vel_pub.publish(twist)
+        self.get_logger().info('Robot stopped.')
+
+    def shutdown(self):
+        """Graceful shutdown"""
+        self._shutdown_requested = True
+        self.stop_robot()
+
+
+# Global reference for signal handler
+_node = None
+
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals (SIGINT, SIGTERM)"""
+    global _node
+    if _node is not None:
+        _node.get_logger().info(f'Received signal {signum}, shutting down...')
+        _node.shutdown()
+    sys.exit(0)
 
 
 def main(args=None):
+    global _node
+
     rclpy.init(args=args)
-    node = AutonomousExplorer()
+    _node = AutonomousExplorer()
+
+    # Register signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        rclpy.spin(node)
+        rclpy.spin(_node)
     except KeyboardInterrupt:
+        pass
+    except SystemExit:
         pass
     finally:
         try:
-            if rclpy.ok():
-                node.stop_robot()
+            if _node is not None:
+                _node.shutdown()
+                _node.destroy_node()
         except:
             pass
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except:
+            pass
 
 
 if __name__ == '__main__':
