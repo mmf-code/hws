@@ -31,10 +31,11 @@ from launch.actions import (
     TimerAction,
     ExecuteProcess,
     SetEnvironmentVariable,
+    LogInfo,
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, Command
+from launch.substitutions import LaunchConfiguration, Command, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
@@ -52,7 +53,6 @@ def generate_launch_description():
     office_urdf_file = os.path.join(pkg_cpr_office, 'urdf', 'office_geometry.urdf.xacro')
     world_file = os.path.join(pkg_robot_hw1, 'worlds', 'empty_office.world')
     ekf_config = os.path.join(pkg_robot_project, 'config', 'robot_localization.yaml')
-    rtabmap_config = os.path.join(pkg_robot_project, 'config', 'rtabmap_rgbd.yaml')
     nav2_params = os.path.join(pkg_robot_project, 'config', 'nav2_params.yaml')
     rviz_config = os.path.join(pkg_robot_project, 'rviz', 'slam_config.rviz')
 
@@ -62,10 +62,11 @@ def generate_launch_description():
     use_random_nav = LaunchConfiguration('use_random_nav', default='false')
     autostart = LaunchConfiguration('autostart', default='true')
 
-    # Database path for loading map - must match the saved map
-    db_path = LaunchConfiguration('db_path', default=os.path.expanduser('~/maps/office_slam_final.db'))
+    # Database path for loading map
+    db_path_default = os.path.expanduser('~/maps/office_slam_final.db')
+    db_path = LaunchConfiguration('db_path', default=db_path_default)
 
-    # Robot spawn position
+    # Robot spawn position - should match SLAM start position
     robot_x = LaunchConfiguration('robot_x', default='2.0')
     robot_y = LaunchConfiguration('robot_y', default='0.0')
     robot_z = LaunchConfiguration('robot_z', default='0.1')
@@ -87,6 +88,8 @@ def generate_launch_description():
         # ========== ENVIRONMENT ==========
         SetEnvironmentVariable('QT_QPA_PLATFORM', 'xcb'),
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
+        # Suppress RTAB-Map VWDictionary warnings
+        SetEnvironmentVariable('RCUTILS_CONSOLE_OUTPUT_FORMAT', '[{severity}] [{name}]: {message}'),
 
         # ========== ARGUMENTS ==========
         DeclareLaunchArgument('use_sim_time', default_value='true'),
@@ -95,11 +98,43 @@ def generate_launch_description():
                               description='Run random waypoint navigator'),
         DeclareLaunchArgument('autostart', default_value='true'),
         DeclareLaunchArgument('db_path',
-                              default_value=os.path.expanduser('~/maps/office_slam_final.db'),
+                              default_value=db_path_default,
                               description='Path to RTAB-Map database'),
         DeclareLaunchArgument('robot_x', default_value='2.0'),
         DeclareLaunchArgument('robot_y', default_value='0.0'),
         DeclareLaunchArgument('robot_z', default_value='0.1'),
+
+        # ========== MAP VERIFICATION ==========
+        LogInfo(msg='\n' + '='*60),
+        LogInfo(msg='  LOCALIZATION + NAVIGATION MODE'),
+        LogInfo(msg='='*60),
+
+        ExecuteProcess(
+            cmd=['bash', '-c',
+                 f'''
+                 echo ""
+                 echo "========================================"
+                 echo "  MAP VERIFICATION"
+                 echo "========================================"
+                 DB_PATH="{db_path_default}"
+                 if [ -f "$DB_PATH" ]; then
+                     SIZE=$(ls -lh "$DB_PATH" | awk '{{print $5}}')
+                     echo "  [OK] Map found: $DB_PATH"
+                     echo "  [OK] Size: $SIZE"
+                     echo ""
+                     echo "  Loading map for LOCALIZATION mode..."
+                     echo "  Robot will use saved map (no new mapping)"
+                     echo "========================================"
+                 else
+                     echo "  [ERROR] Map NOT found: $DB_PATH"
+                     echo "  Please run slam_mapping.launch.py first!"
+                     echo "========================================"
+                     exit 1
+                 fi
+                 echo ""
+                 '''],
+            output='screen'
+        ),
 
         # ========== GAZEBO ==========
         IncludeLaunchDescription(
@@ -143,6 +178,7 @@ def generate_launch_description():
         TimerAction(
             period=4.0,
             actions=[
+                LogInfo(msg='[LAUNCH] Spawning robot at position (2.0, 0.0)...'),
                 Node(
                     package='gazebo_ros',
                     executable='spawn_entity.py',
@@ -163,6 +199,7 @@ def generate_launch_description():
         TimerAction(
             period=6.0,
             actions=[
+                LogInfo(msg='[LAUNCH] Starting EKF sensor fusion...'),
                 Node(
                     package='robot_localization',
                     executable='ekf_node',
@@ -202,59 +239,124 @@ def generate_launch_description():
             ]
         ),
 
-        # ========== RTAB-MAP (Localization Mode - Load Saved Map) ==========
-        # Log which database is being loaded
+        # ========== RTAB-MAP (LOCALIZATION MODE) ==========
         TimerAction(
-            period=8.0,
+            period=10.0,
             actions=[
-                ExecuteProcess(
-                    cmd=['bash', '-c',
-                         f'echo ""; echo "========================================"; '
-                         f'echo "LOCALIZATION + NAVIGATION MODE"; '
-                         f'echo "Loading map from: ~/maps/office_slam_final.db"; '
-                         f'echo "Make sure this map exists!"; '
-                         f'ls -lh ~/maps/office_slam_final.db 2>/dev/null || echo "WARNING: Map file not found!"; '
-                         f'echo "========================================"; echo ""'],
-                    output='screen'
-                )
-            ]
-        ),
-        TimerAction(
-            period=9.0,
-            actions=[
+                LogInfo(msg='[LAUNCH] Starting RTAB-Map in LOCALIZATION mode...'),
+                LogInfo(msg='[LAUNCH] Loading 809MB database - please wait ~30-60 seconds...'),
                 Node(
                     package='rtabmap_slam',
                     executable='rtabmap',
                     name='rtabmap',
                     output='screen',
-                    parameters=[
-                        rtabmap_config,
-                        {
-                            'use_sim_time': use_sim_time,
-                            'database_path': db_path,
-                            # LOCALIZATION Mode - Use Saved Map
-                            'Mem/IncrementalMemory': 'false',  # Don't add new nodes
-                            'Mem/InitWMWithAllNodes': 'true',  # Load all nodes from DB
-                        }
+                    arguments=[
+                        '--ros-args',
+                        '--log-level', 'rtabmap:=warn',  # Suppress INFO/DEBUG messages
                     ],
+                    parameters=[{
+                        'use_sim_time': use_sim_time,
+
+                        # DATABASE - Load existing map
+                        'database_path': db_path_default,
+
+                        # LOCALIZATION MODE - Critical settings
+                        'Mem/IncrementalMemory': 'false',      # NO new nodes
+                        'Mem/InitWMWithAllNodes': 'true',      # Load ALL nodes from DB
+
+                        # Frame configuration
+                        'frame_id': 'base_link',
+                        'odom_frame_id': 'odom',
+                        'map_frame_id': 'map',
+
+                        # Subscription
+                        'subscribe_depth': True,
+                        'subscribe_rgb': True,
+                        'approx_sync': True,
+                        'approx_sync_max_interval': 0.1,
+
+                        # LOCALIZATION - Relaxed matching for better localization
+                        'Rtabmap/LoopThr': '0.08',             # Lower threshold
+                        'Vis/MinInliers': '8',                 # Lower inlier requirement
+                        'Vis/MaxFeatures': '1000',             # More features
+                        'RGBD/OptimizeFromGraphEnd': 'false',  # Optimize from start
+                        'Reg/Strategy': '0',                   # Visual registration
+                        'Reg/Force3DoF': 'true',               # 2D mode (ground robot)
+
+                        # Map publishing
+                        'Rtabmap/DetectionRate': '2.0',
+                        'Grid/FromDepth': 'true',
+                        'Grid/CellSize': '0.05',
+                        'Grid/RangeMax': '4.0',
+
+                        # TF publishing
+                        'publish_tf': True,
+                        'wait_for_transform': 0.5,
+                        'tf_delay': 0.05,
+                    }],
                     remappings=[
                         ('rgb/image', '/camera/rgbd_camera/image_raw'),
                         ('rgb/camera_info', '/camera/rgbd_camera/camera_info'),
                         ('depth/image', '/camera/rgbd_camera/depth/image_raw'),
                         ('odom', '/odometry/filtered'),
                         ('map', '/map'),
-                        ('cloud_map', '/rtabmap/cloud_map'),
-                        ('grid_map', '/rtabmap/grid_map'),
-                    ],
-                    arguments=[]  # Don't delete DB - load existing
+                    ]
+                )
+            ]
+        ),
+
+        # ========== RTAB-MAP LOADING MONITOR ==========
+        TimerAction(
+            period=15.0,
+            actions=[
+                ExecuteProcess(
+                    cmd=['bash', '-c',
+                         '''
+                         echo ""
+                         echo "========================================"
+                         echo "  CHECKING MAP LOADING STATUS..."
+                         echo "========================================"
+
+                         # Wait for rtabmap node
+                         for i in {1..30}; do
+                             if ros2 node list 2>/dev/null | grep -q rtabmap; then
+                                 echo "  [OK] RTAB-Map node is running"
+                                 break
+                             fi
+                             sleep 1
+                         done
+
+                         # Check if map is published
+                         sleep 3
+                         MAP_INFO=$(timeout 5 ros2 topic echo /map --once 2>/dev/null | grep -E "width|height" | head -2)
+                         if [ -n "$MAP_INFO" ]; then
+                             echo "  [OK] Map is being published:"
+                             echo "$MAP_INFO" | sed 's/^/       /'
+                         else
+                             echo "  [WAIT] Map not yet published, still loading..."
+                         fi
+
+                         # Check TF
+                         TF_CHECK=$(timeout 3 ros2 run tf2_ros tf2_echo map base_link 2>&1 | head -3)
+                         if echo "$TF_CHECK" | grep -q "Translation"; then
+                             echo "  [OK] TF map->base_link is available"
+                         else
+                             echo "  [WAIT] TF not yet available"
+                         fi
+
+                         echo "========================================"
+                         echo ""
+                         '''],
+                    output='screen'
                 )
             ]
         ),
 
         # ========== NAV2 STACK ==========
         TimerAction(
-            period=14.0,
+            period=30.0,  # Wait for RTAB-Map to fully load
             actions=[
+                LogInfo(msg='[LAUNCH] Starting Nav2 navigation stack...'),
                 # Lifecycle Manager
                 Node(
                     package='nav2_lifecycle_manager',
@@ -316,8 +418,9 @@ def generate_launch_description():
 
         # ========== RANDOM WAYPOINT NAVIGATOR (optional) ==========
         TimerAction(
-            period=20.0,
+            period=45.0,  # Wait for Nav2 to be fully ready
             actions=[
+                LogInfo(msg='[LAUNCH] Starting random waypoint navigator...'),
                 Node(
                     package='robot_project',
                     executable='random_waypoint_nav',

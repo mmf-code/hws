@@ -34,7 +34,7 @@ rtabmap:
     # ============ RTAB-MAP CORE PARAMETERS ============
     # Database
     Rtabmap/DatabasePath: ""  # Empty = temp database
-    Rtabmap/DetectionRate: "2.0"  # Hz - increased for faster mapping
+    Rtabmap/DetectionRate: "1.0"  # Hz - reduced for faster processing
     Rtabmap/CreateIntermediateNodes: "true"
     Rtabmap/PublishPdf: "false"  # Don't publish probability map
 
@@ -47,7 +47,7 @@ rtabmap:
     # ============ FEATURE DETECTION ============
     # GFTT/ORB features (good for indoor environments)
     Kp/DetectorStrategy: "6"  # 6=GFTT, 8=ORB
-    Kp/MaxFeatures: "800"  # Increased for more features
+    Kp/MaxFeatures: "400"  # Reduced for faster processing
     Kp/MaxDepth: "4.0"  # Max depth for features (camera range)
     Kp/MinDepth: "0.1"  # Min depth for features
 
@@ -60,7 +60,7 @@ rtabmap:
 
     # ============ GRAPH OPTIMIZATION ============
     Optimizer/Strategy: "1"  # 0=TORO, 1=g2o, 2=GTSAM
-    Optimizer/Iterations: "100"
+    Optimizer/Iterations: "50"
     Optimizer/Slam2D: "true"  # 2D optimization (ground robot)
     Optimizer/VarianceIgnored: "false"
 
@@ -69,16 +69,17 @@ rtabmap:
     RGBD/OptimizeMaxError: "3.0"  # Max error for optimization
     RGBD/LocalRadius: "10.0"  # Local map radius (meters)
     RGBD/ProximityBySpace: "true"
-    RGBD/AngularUpdate: "0.1"  # Min angular change to add node (rad)
-    RGBD/LinearUpdate: "0.1"  # Min linear change to add node (m)
+    RGBD/AngularUpdate: "0.15"  # Min angular change to add node (rad)
+    RGBD/LinearUpdate: "0.15"  # Min linear change to add node (m)
     RGBD/NeighborLinkRefining: "true"
+    RGBD/CreateOccupancyGrid: "true"  # CRITICAL: Generate 2D grid for Nav2
 
     # ============ POINT CLOUD ASSEMBLY ============
     Grid/CellSize: "0.05"  # 5cm resolution (improved for better detail)
     Grid/RangeMax: "4.0"  # Max range for grid (matches camera)
     Grid/RangeMin: "0.2"
     Grid/ClusterRadius: "0.1"
-    Grid/DepthDecimation: "4"  # Reduced for better obstacle detection
+    Grid/DepthDecimation: "8"  # Increased for faster grid generation
     Grid/FromDepth: "true"  # Generate grid from depth
     Grid/MaxGroundAngle: "45.0"
     Grid/MaxObstacleHeight: "2.0"

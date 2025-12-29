@@ -31,6 +31,8 @@ setup(
             'slam_comparison = robot_project.slam_comparison:main',
             'random_waypoint_nav = robot_project.random_waypoint_nav:main',
             'simple_goal_nav = robot_project.simple_goal_nav:main',
+            'stop_robot = robot_project.stop_robot:main',
+            'hybrid_slam_controller = robot_project.hybrid_slam_controller:main',
         ],
     },
 )
