@@ -1,0 +1,117 @@
+# RTAB-Map ICP-based SLAM Configuration
+# Uses Iterative Closest Point on depth point clouds
+# Comparison configuration for project evaluation
+
+rtabmap:
+  ros__parameters:
+    # ============ FRAME CONFIGURATION ============
+    frame_id: base_link
+    odom_frame_id: odom
+    map_frame_id: map
+    use_sim_time: true
+
+    # ============ SUBSCRIPTION TOPICS ============
+    subscribe_depth: true
+    subscribe_rgb: true
+    subscribe_scan: false
+    subscribe_scan_cloud: true  # Use point cloud for ICP
+    subscribe_odom_info: false
+
+    approx_sync: true
+    approx_sync_max_interval: 0.05
+    sync_queue_size: 10
+    qos: 2
+
+    # ============ RTAB-MAP CORE PARAMETERS ============
+    Rtabmap/DatabasePath: ""
+    Rtabmap/DetectionRate: "1.0"
+    Rtabmap/CreateIntermediateNodes: "false"
+
+    # Memory
+    Mem/IncrementalMemory: "true"
+    Mem/InitWMWithAllNodes: "true"
+    Mem/STMSize: "30"
+    Mem/RehearsalSimilarity: "0.6"
+
+    # ============ ICP CONFIGURATION ============
+    # Use ICP for registration instead of visual features
+    Reg/Strategy: "1"  # 0=Visual, 1=ICP, 2=Visual+ICP
+    Reg/Force3DoF: "true"  # 2D motion constraint
+
+    # ICP Parameters
+    Icp/Strategy: "1"  # 0=Point-to-Point, 1=Point-to-Plane
+    Icp/MaxCorrespondenceDistance: "0.1"
+    Icp/MaxTranslation: "0.3"
+    Icp/MaxRotation: "0.78"  # 45 degrees
+    Icp/Iterations: "30"
+    Icp/VoxelSize: "0.05"
+    Icp/DownsamplingStep: "2"
+    Icp/PointToPlaneK: "20"
+    Icp/PointToPlaneRadius: "0.0"
+    Icp/PointToPlaneMinComplexity: "0.02"
+    Icp/Epsilon: "0.001"
+    Icp/CorrespondenceRatio: "0.3"
+    Icp/OutlierRatio: "0.85"
+
+    # ICP Point Cloud Filtering
+    Icp/RangeMin: "0.1"
+    Icp/RangeMax: "4.0"
+
+    # ============ LOOP CLOSURE WITH ICP ============
+    Rtabmap/LoopThr: "0.11"
+    RGBD/LoopClosureReextractFeatures: "true"
+    RGBD/ProximityBySpace: "true"
+    RGBD/ProximityPathMaxNeighbors: "10"
+    RGBD/ProximityMaxPaths: "3"
+
+    # ============ GRAPH OPTIMIZATION ============
+    Optimizer/Strategy: "1"  # g2o
+    Optimizer/Iterations: "100"
+    Optimizer/Slam2D: "true"
+    Optimizer/VarianceIgnored: "false"
+
+    # ============ RGB-D/POINT CLOUD SPECIFIC ============
+    RGBD/OptimizeFromGraphEnd: "true"
+    RGBD/OptimizeMaxError: "3.0"
+    RGBD/LocalRadius: "10.0"
+    RGBD/AngularUpdate: "0.1"
+    RGBD/LinearUpdate: "0.1"
+    RGBD/NeighborLinkRefining: "true"
+
+    # ============ GRID/MAP CONFIGURATION ============
+    Grid/CellSize: "0.05"
+    Grid/RangeMax: "4.0"
+    Grid/RangeMin: "0.1"
+    Grid/ClusterRadius: "0.1"
+    Grid/DepthDecimation: "4"
+    Grid/FromDepth: "true"
+    Grid/MaxGroundAngle: "45.0"
+    Grid/MaxObstacleHeight: "2.0"
+    Grid/MinGroundHeight: "0.0"
+    Grid/NormalK: "20"
+    Grid/3D: "true"
+
+    # Point cloud output
+    cloud_output_voxelized: true
+    cloud_voxel_size: 0.05
+
+    # ============ TF PUBLISHING ============
+    publish_tf: true  # CRITICAL: Enable map->odom transform
+    wait_for_transform: 0.5  # Wait up to 500ms for transforms
+    tf_delay: 0.05  # Publish TF 50ms in future (helps Nav2 interpolate)
+    tf_tolerance: 0.1  # Transform lookup tolerance
+
+# ICP Odometry node (comparison to EKF)
+icp_odometry:
+  ros__parameters:
+    frame_id: base_link
+    odom_frame_id: vo  # Visual/ICP odometry frame (not odom)
+    publish_tf: false  # Don't conflict with EKF
+    use_sim_time: true
+
+    Odom/Strategy: "1"  # 1=ICP
+    Odom/ResetCountdown: "3"
+    Odom/GuessMotion: "true"
+    Icp/VoxelSize: "0.05"
+    Icp/MaxCorrespondenceDistance: "0.1"
+    Icp/PointToPlane: "true"

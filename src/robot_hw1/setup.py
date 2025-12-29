@@ -14,6 +14,8 @@ setup(
         (f'share/{package_name}/urdf', glob('urdf/*.xacro')),
         (f'share/{package_name}/rviz', glob('rviz/*.rviz')),
         (f'share/{package_name}/config', glob('config/*.xml')),
+        (f'share/{package_name}/meshes/p3dx', glob('meshes/p3dx/*.stl')),
+        (f'share/{package_name}/worlds', glob('worlds/*.world')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,6 +28,7 @@ setup(
         'console_scripts': [
             'cmd_vel_publisher = robot_hw1.cmd_vel_publisher:main',
             'noisy_odom_publisher = robot_hw1.noisy_odom_publisher:main',
+            'corridor_navigator = robot_hw1.corridor_navigator:main',
         ],
     },
 )

@@ -23,3 +23,18 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# ROS SLAM Database
+.ros/
+~/.ros/
+*.db
+
+# Test Data & Results
+project/results/data/*.csv
+project/results/data/*.pgm
+project/results/data/*.db
+project/results/data/screenshots/
+!project/results/data/.gitkeep
+
+# RViz temporary files
+*.backup.rviz
