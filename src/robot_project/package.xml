@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robot_project</name>
+  <version>1.0.0</version>
+  <description>
+    KON414E Final Project: 3D SLAM and Autonomous Navigation
+    Team 14: Ceylan Tolunay, Atakan Yaman, Eren Yucetürk
+    Robot: Pioneer 3-DX with RGBD Camera and IMU
+  </description>
+  <maintainer email="team14@itu.edu.tr">Team 14</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Runtime dependencies -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <!-- Project specific dependencies -->
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>rtabmap_ros</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>octomap_server</exec_depend>
+
+  <!-- Our base package -->
+  <exec_depend>robot_hw1</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
