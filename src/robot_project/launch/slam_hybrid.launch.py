@@ -76,7 +76,7 @@ def generate_launch_description():
         # ========== ARGUMENTS ==========
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('use_rviz', default_value='true'),
-        DeclareLaunchArgument('start_mode', default_value='auto',
+        DeclareLaunchArgument('start_mode', default_value='manual',
                               description='Start mode: auto, manual, or turbo'),
         DeclareLaunchArgument('base_speed', default_value='0.9',
                               description='Base linear speed (m/s)'),
@@ -227,6 +227,13 @@ def generate_launch_description():
                         'Kp/MaxFeatures': '500',
                         'Kp/MaxDepth': '4.0',
 
+                        # Loop Closure - STRICT to prevent false matches
+                        'Vis/MinInliers': '20',           # Min visual inliers (default 20)
+                        'RGBD/OptimizeMaxError': '1.0',   # Reject bad loop closures
+                        'Rtabmap/LoopThr': '0.11',        # Loop closure threshold (higher = stricter)
+                        'Mem/RehearsalSimilarity': '0.6', # Memory rehearsal threshold
+                        'RGBD/LoopClosureReextractFeatures': 'true',  # Re-extract for verification
+
                         # Grid for Nav2
                         'RGBD/CreateOccupancyGrid': 'true',
                         'Grid/FromDepth': 'true',
@@ -259,9 +266,9 @@ def generate_launch_description():
             ]
         ),
 
-        # ========== HYBRID CONTROLLER (T=12s) ==========
+        # ========== HYBRID CONTROLLER (T=18s) ==========
         TimerAction(
-            period=12.0,
+            period=18.0,
             actions=[
                 LogInfo(msg='[Controller] Starting Hybrid Controller with PyGame...'),
                 LogInfo(msg='[Controller] Focus PyGame window for keyboard control!'),
@@ -277,15 +284,15 @@ def generate_launch_description():
                         'base_angular_speed': 1.8,
                         'min_distance': 0.8,
                         'critical_distance': 0.4,
-                        'start_delay': 2.0,
+                        'start_delay': 5.0,
                     }]
                 )
             ]
         ),
 
-        # ========== MAP METRICS (T=15s) ==========
+        # ========== MAP METRICS (T=20s) ==========
         TimerAction(
-            period=15.0,
+            period=20.0,
             actions=[
                 Node(
                     package='robot_project',
@@ -297,9 +304,9 @@ def generate_launch_description():
             ]
         ),
 
-        # ========== RVIZ (T=16s) ==========
+        # ========== RVIZ (T=15s) ==========
         TimerAction(
-            period=16.0,
+            period=15.0,
             actions=[
                 ExecuteProcess(
                     cmd=[
