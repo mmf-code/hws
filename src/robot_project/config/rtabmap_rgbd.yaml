@@ -34,8 +34,8 @@ rtabmap:
     # ============ RTAB-MAP CORE PARAMETERS ============
     # Database
     Rtabmap/DatabasePath: ""  # Empty = temp database
-    Rtabmap/DetectionRate: "0.5"  # Hz (matches database creation)
-    Rtabmap/CreateIntermediateNodes: "false"
+    Rtabmap/DetectionRate: "2.0"  # Hz - increased for faster mapping
+    Rtabmap/CreateIntermediateNodes: "true"
     Rtabmap/PublishPdf: "false"  # Don't publish probability map
 
     # Memory Management
@@ -47,7 +47,7 @@ rtabmap:
     # ============ FEATURE DETECTION ============
     # GFTT/ORB features (good for indoor environments)
     Kp/DetectorStrategy: "6"  # 6=GFTT, 8=ORB
-    Kp/MaxFeatures: "500"  # Must match database creation setting
+    Kp/MaxFeatures: "800"  # Increased for more features
     Kp/MaxDepth: "4.0"  # Max depth for features (camera range)
     Kp/MinDepth: "0.1"  # Min depth for features
 
@@ -74,16 +74,16 @@ rtabmap:
     RGBD/NeighborLinkRefining: "true"
 
     # ============ POINT CLOUD ASSEMBLY ============
-    Grid/CellSize: "0.1"  # 10cm resolution (reduced for stability)
+    Grid/CellSize: "0.05"  # 5cm resolution (improved for better detail)
     Grid/RangeMax: "4.0"  # Max range for grid (matches camera)
     Grid/RangeMin: "0.2"
     Grid/ClusterRadius: "0.1"
-    Grid/DepthDecimation: "6"  # Matches database creation
+    Grid/DepthDecimation: "4"  # Reduced for better obstacle detection
     Grid/FromDepth: "true"  # Generate grid from depth
     Grid/MaxGroundAngle: "45.0"
     Grid/MaxObstacleHeight: "2.0"
     Grid/MinGroundHeight: "0.0"
-    Grid/NormalK: "10"
+    Grid/NormalK: "15"  # Increased for better normal estimation
     Grid/3D: "true"  # Enable 3D occupancy grid
 
     # ============ 3D MAP CONFIGURATION ============
@@ -92,9 +92,9 @@ rtabmap:
     cloud_voxel_size: 0.08  # Matches database creation
     cloud_subtract_filtering: false
 
-    # Map publishing (reduce rate)
+    # Map publishing
     map_filter_radius: 0.1
-    map_always_update: false
+    map_always_update: true
 
     # Octomap integration
     grid_from_depth: true
