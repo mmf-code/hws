@@ -36,8 +36,8 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # Default to the best database
-    default_db = os.path.expanduser('~/.ros/rtabmap_final_401mb_backup.db')
+    # Default to the current database
+    default_db = os.path.expanduser('~/.ros/rtabmap.db')
 
     db_path = LaunchConfiguration('db_path', default=default_db)
     db_name = LaunchConfiguration('db_name', default='final_backup')
