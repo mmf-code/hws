@@ -24,157 +24,155 @@ colcon build --symlink-install --packages-select cpr_office_gazebo
 colcon build --symlink-install --packages-select robot_project
 ```
 
-## Running Simulations
+## Primary Launch Files
 
-### HW2: Sensor Integration
+### Recommended: Hybrid SLAM with PyGame Control
 ```bash
-# Terminal 1: Launch Gazebo simulation
-ros2 launch robot_hw1 hw2.launch.py use_rviz:=false
+# Fresh SLAM with manual/auto control (RECOMMENDED)
+ros2 launch robot_project slam_hybrid.launch.py
 
-# Terminal 2: Start robot motion (circular path)
-ros2 run robot_hw1 cmd_vel_publisher
+# Start in specific mode
+ros2 launch robot_project slam_hybrid.launch.py start_mode:=auto
+ros2 launch robot_project slam_hybrid.launch.py start_mode:=manual
 
-# Terminal 3: Launch RViz visualization
-rviz2 -d install/robot_hw1/share/robot_hw1/rviz/hw2_config.rviz
+# Custom parameters
+ros2 launch robot_project slam_hybrid.launch.py base_speed:=1.2 use_rviz:=false
 ```
 
-### HW3: Office World Navigation
+### Nav2 Navigation (separate terminal after SLAM starts)
 ```bash
-# Launch full system (Gazebo, RViz, corridor navigator)
-ros2 launch robot_hw1 hw3.launch.py
-
-# Launch without RViz
-ros2 launch robot_hw1 hw3.launch.py use_rviz:=false
-
-# Launch without autonomous controller (manual control)
-ros2 launch robot_hw1 hw3.launch.py run_controller:=false
+ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
 ```
 
-### HW3: Full Navigation (SLAM + Nav2)
+### Other Launch Files
 ```bash
-# Launch with RTAB-Map SLAM and Nav2 navigation
+# Full navigation (SLAM + Nav2 combined)
 ros2 launch robot_project full_navigation.launch.py
+
+# View existing map database
+ros2 launch robot_project view_map.launch.py
+
+# HW2: Sensor integration test
+ros2 launch robot_hw1 hw2.launch.py
+
+# HW3: Office world with corridor navigator
+ros2 launch robot_hw1 hw3.launch.py
 ```
 
-## Debugging and Sensor Verification
+## Hybrid SLAM Controller
 
-```bash
-# Check available topics
-ros2 topic list | grep -E 'camera|imu|odom'
+The `hybrid_slam_controller.py` provides PyGame-based control for SLAM mapping.
 
-# Monitor publishing rates
-ros2 topic hz /imu/data
-ros2 topic hz /camera/rgbd_camera/image_raw
+### Control Modes
+- **MANUAL** (default): Direct WASD control, no obstacle avoidance
+- **AUTO**: Depth-based autonomous exploration with obstacle avoidance
+- **TURBO**: Auto mode with 2x speed multiplier
 
-# View sensor data
-ros2 topic echo /imu/data --once
-rqt_image_view /camera/rgbd_camera/image_raw
+### Keyboard Controls
+| Key | Action |
+|-----|--------|
+| WASD | Move forward/left/backward/right |
+| 1-5 | Speed levels (0.2x to 2.0x) |
+| Q/E | 90° left/right spin |
+| R | 180° U-turn |
+| SPACE | Toggle Auto/Manual mode |
+| T | Turbo mode toggle |
+| P | Pause/Resume (use before Nav2 goal) |
+| ESC | Emergency stop |
 
-# Plot IMU angular velocity
-ros2 run rqt_plot rqt_plot /imu/data/angular_velocity/x /imu/data/angular_velocity/y /imu/data/angular_velocity/z
-
-# Check transform tree
-ros2 run tf2_ros tf2_echo map base_link
-ros2 run tf2_tools view_frames
-```
+### Nav2 Integration
+When using Nav2 with hybrid controller:
+1. Press **P** to pause controller
+2. Set 2D Goal Pose in RViz
+3. Nav2 controls robot to goal
+4. Press **P** to resume manual control
 
 ## Architecture
 
 ### Package Structure
-- **src/robot_hw1/** - Main ROS 2 Python package (ament_python)
-  - `robot_hw1/` - Python executable nodes
-    - `cmd_vel_publisher.py` - Circular motion controller for HW2
-    - `noisy_odom_publisher.py` - Adds realistic odometry drift to Gazebo data
-    - `corridor_navigator.py` - Depth-based reactive obstacle avoidance (HW3)
-  - `launch/hw2.launch.py` - Gazebo + robot spawn + robot state publisher
-  - `launch/hw3.launch.py` - Office world + rviz + corridor navigator
-  - `launch/robot_hw1.launch.py` - Generic robot launch (used by other packages)
-  - `urdf/p3dx_hw2.urdf.xacro` - Robot URDF with RGBD camera and IMU sensors
-  - `rviz/` - RViz configuration files
-  - `worlds/` - Gazebo world files (empty_office.world)
-  - `config/` - Robot controller and sensor configurations
-  - `meshes/` - STL mesh files for robot visualization
+- **src/robot_hw1/** - Main ROS 2 Python package
+  - `robot_hw1/` - Python nodes (cmd_vel_publisher, noisy_odom_publisher, corridor_navigator)
+  - `urdf/p3dx_hw2.urdf.xacro` - Robot URDF with RGBD camera and IMU
+  - `worlds/empty_office.world` - Gazebo world with ground plane (critical for physics)
 
-- **src/robot_project/** - HW3 Final project package (SLAM + Navigation)
-  - `launch/full_navigation.launch.py` - RTAB-Map SLAM + Nav2 bringup
-  - `config/` - Nav2 behavior server parameters
-  - `rviz/` - Navigation RViz configs
+- **src/robot_project/** - SLAM + Navigation package
+  - `robot_project/hybrid_slam_controller.py` - PyGame SLAM controller
+  - `robot_project/map_metrics.py` - 3D map quality metrics
+  - `launch/slam_hybrid.launch.py` - Main SLAM launch file
+  - `config/robot_localization.yaml` - EKF sensor fusion config
 
-- **hw3/src/cpr_office_gazebo/** - Office environment package (ported from ROS 1)
-  - Provides office world URDF and meshes
-
-- **p3dx_homework/** - HW1 reference (original ROS 1 to ROS 2 port)
-  - Historical reference for Pioneer 3-DX integration
+- **hw3/src/cpr_office_gazebo/** - Office environment (ROS 1 port)
 
 ### Key ROS Topics
 
 | Topic | Type | Description |
 |-------|------|-------------|
-| `/cmd_vel` | Twist | Velocity commands to diff_drive plugin |
-| `/odom` | Odometry | Noisy odometry with drift (HW2) |
-| `/odom_clean` | Odometry | Ground truth odometry from Gazebo |
-| `/camera/rgbd_camera/image_raw` | Image | RGB image from RGBD camera (HW3) |
-| `/camera/rgbd_camera/depth/image_raw` | Image | Depth image (HW3) |
-| `/camera/rgb/image_raw` | Image | RGB image (HW2 naming) |
-| `/camera/depth/points` | PointCloud2 | Depth point cloud (HW2) |
-| `/imu/data` | Imu | IMU sensor data (100Hz) |
-| `/goal_pose` | PoseStamped | Navigation goal (HW3 full navigation) |
-| `/amcl_pose` | PoseWithCovarianceStamped | Robot localization estimate |
+| `/cmd_vel` | Twist | Velocity commands |
+| `/odometry/filtered` | Odometry | EKF-fused odometry |
+| `/map` | OccupancyGrid | 2D map from RTAB-Map |
+| `/rtabmap/cloud_map` | PointCloud2 | 3D point cloud map |
+| `/camera/rgbd_camera/depth/image_raw` | Image | Depth image |
+| `/scan` | LaserScan | Converted from depth |
+| `/goal_pose` | PoseStamped | Nav2 navigation goal |
 
-### Robot Sensors (URDF Configuration)
-- **RGBD Camera:** Front-mounted, 90° FOV, 0.1-4.0m depth range, 30Hz update rate
-- **IMU:** Center-mounted, 100Hz, Gaussian noise configured in p3dx_hw2.urdf.xacro
-
-### Data Flow
-1. Launch file starts Gazebo, spawns robot model, publishes TF tree
-2. Gazebo physics plugin outputs ground truth `/odom_clean`
-3. `noisy_odom_publisher` subscribes to `/odom_clean`, adds realistic drift, publishes `/odom` (HW2)
-4. Controller sends Twist commands via `/cmd_vel` to differential drive plugin
-5. Camera and IMU Gazebo plugins publish raw sensor data on respective topics
-
-### Corridor Navigator Algorithm (HW3)
-
-The `corridor_navigator.py` node uses reactive control dividing depth image into 5 regions:
-
+### TF Tree
 ```
-+--------+------+--------+------+--------+
-|  FAR   | LEFT | CENTER | RIGHT|  FAR   |
-|  LEFT  |      |        |      | RIGHT  |
-+--------+------+--------+------+--------+
-  0-15%  15-35%  35-65%  65-85%  85-100%
+map → odom → base_link → camera_link
+                      → imu_link
+                      → front_sonar / back_sonar
 ```
 
-**Control Modes:**
-- **Normal:** All clear - move forward at 0.3 m/s
-- **Approaching:** Center < 0.8m - reduce speed, turn toward open side
-- **Critical:** Center < 0.4m - stop, aggressive turn
-- **Corner:** All blocked - reverse slightly, sharp turn
-- **Stuck Recovery:** No progress > 1.5s - backup and sharp turn
+### SLAM Timing (slam_hybrid.launch.py)
+```
+T=0s    Gazebo starts
+T=2s    Office geometry spawn
+T=4s    Robot spawn (z=0.1)
+T=6s    EKF sensor fusion
+T=7s    Depth → LaserScan
+T=9s    RTAB-Map SLAM
+T=15s   RViz
+T=18s   Hybrid Controller (MANUAL mode)
+T=23s   Controller active (after 5s delay)
+```
 
-## Development Workflow
+## Database Management
 
-### Adding New Python Nodes
-1. Create node file in `src/robot_hw1/robot_hw1/`
-2. Add entry point in `src/robot_hw1/setup.py` under `console_scripts`
-3. Run `colcon build --symlink-install` to register
-4. Launch with `ros2 run robot_hw1 <node_name>`
+```bash
+# RTAB-Map database location
+~/.ros/rtabmap.db
 
-### Modifying Robot Model
-1. Edit `src/robot_hw1/urdf/p3dx_hw2.urdf.xacro`
-2. For sensor parameters, modify the xacro properties at the top of the file
-3. Run `colcon build --symlink-install` to regenerate URDF
-4. Verify with `ros2 param list` after launching
+# Check database size
+ls -lh ~/.ros/rtabmap.db
 
-### Adding New Data Files
-1. Place files in appropriate subdirectory (worlds/, rviz/, config/, etc.)
-2. Register in `src/robot_hw1/setup.py` under `data_files`
-3. Run `colcon build --symlink-install`
-4. Reference in launch files using `get_package_share_directory()`
+# Backup database (use SQLite API for safe copy during active SLAM)
+cp ~/.ros/rtabmap.db ~/maps/backup_$(date +%Y%m%d_%H%M%S).db
+
+# Backups directory
+~/maps/
+```
+
+## Debugging
+
+```bash
+# Check SLAM status
+ros2 node list | grep rtabmap
+ros2 topic hz /map
+
+# Verify TF tree
+ros2 run tf2_tools view_frames
+
+# Check camera
+ros2 topic hz /camera/rgbd_camera/depth/image_raw
+
+# Monitor map metrics (auto-saved to project/results/data/)
+ros2 topic echo /map_metrics
+```
 
 ## Known Issues and Workarounds
 
-- **RViz libpthread crash:** Use apt package instead of snap: `sudo apt install ros-humble-rviz2`. If display issues occur, set `export QT_QPA_PLATFORM=xcb`
-- **Gazebo slow first startup:** Initial physics engine load takes 10-15 seconds, subsequent launches are faster
-- **Camera initialization delay:** Wait 5-10 seconds after launch before relying on camera data
-- **Topic naming differs between HW2/HW3:** HW2 uses `/camera/rgb/...`, HW3 uses `/camera/rgbd_camera/...` - check URDF sensor configuration in launch file
-- **Transform lookup failures:** Ensure `robot_state_publisher` is running and robot URDF is loaded. Check with `ros2 run tf2_tools view_frames`
+- **Robot falling through ground:** Ensure `empty_office.world` has ground_plane model. Check with: `grep ground_plane src/robot_hw1/worlds/empty_office.world`
+- **Map drift/reset during SLAM:** Loop closure false positives. Fixed with strict parameters in slam_hybrid.launch.py (Vis/MinInliers, RGBD/OptimizeMaxError)
+- **Nav2 "failed to create plan":** Usually costmap issue. Verify /map is publishing: `ros2 topic echo /map --once`
+- **PyGame keyboard not working:** Click on PyGame window to give it focus
+- **RViz libpthread crash:** Use apt package: `sudo apt install ros-humble-rviz2`
+- **Controller conflicts with Nav2:** Press P to pause controller before using 2D Goal Pose
