@@ -1,4 +1,4 @@
-# ROS 2 build artifacts
+# Build artifacts
 build/
 install/
 log/
@@ -24,21 +24,23 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# ROS SLAM Database
+# ROS
 .ros/
-~/.ros/
 *.db
+*.bag
 
-# Test Data & Results
+# Test data (large files)
 project/results/data/*.csv
 project/results/data/*.pgm
 project/results/data/*.db
 project/results/data/screenshots/
 !project/results/data/.gitkeep
 
-# RViz temporary files
+# Archive (development notes)
+project/archive/
+
+# RViz temp
 *.backup.rviz
 
-# Claude Code config
+# Claude Code
 .claude/
-CLAUDE.md
